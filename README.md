@@ -46,7 +46,7 @@ python simulator.py --once     # 1회만 재생
 python test_risk_engine.py
 ```
 
-## ESP32 연동 스펙 (HW팀용)
+## ESP32 연동 스펙
 
 1초 간격으로 전송:
 
