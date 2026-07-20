@@ -23,7 +23,7 @@ ESP32 태그(HW팀)로부터 HTTP로 데이터를 수신하고, 위험도 판단
 | `simulator.py` | ESP32 목업 시뮬레이터 (시나리오 재생, 노이즈 모드) |
 | `test_risk_engine.py` | 위험도 엔진 단위 테스트 |
 
-## 실행
+## Start
 
 ```bash
 pip install -r requirements.txt
