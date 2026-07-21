@@ -12,17 +12,16 @@
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Malgun Gothic',sans-serif; padding:20px; }
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
   h1 { font-size:22px; } h1 span { color:var(--accent); }
   .conn { font-size:13px; color:var(--muted); }
   .conn.on::before { content:"● "; color:var(--safe); }
   .conn.off::before { content:"● "; color:var(--danger); }
-  #fallBanner { display:none; background:var(--danger); color:#fff; font-weight:700;
-    padding:12px 16px; border-radius:8px; margin-bottom:14px; animation:blink .7s infinite; }
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
   .panel h2 { font-size:15px; color:var(--muted); margin-bottom:12px; font-weight:600; }
   .full { grid-column:1 / -1; }
+  /* 실시간 카드 */
   #cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
   .card { border:1px solid var(--border); border-radius:8px; padding:14px; transition:border-color .2s; }
   .card .pair { font-size:13px; color:var(--muted); }
@@ -30,32 +29,25 @@
   .card .meta { font-size:12px; color:var(--muted); }
   .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:700; color:#000; }
   .l0 { background:var(--safe);} .l1{ background:var(--caution);} .l2{ background:var(--warning);} .l3{ background:var(--danger); animation:blink 0.6s infinite;}
-  .tbadge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; border:1px solid var(--border); color:var(--muted); }
-  .t-fall { border-color:var(--danger); color:var(--danger); }
-  .t-env { border-color:var(--accent); color:var(--accent); }
   .card.l3-border { border-color:var(--danger); box-shadow:0 0 12px rgba(248,81,73,.4); }
   .card.l2-border { border-color:var(--warning); }
   @keyframes blink { 50% { opacity:.4; } }
   .card.offline { opacity:.45; }
-  /* 환경 카드 */
-  #envCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-  .envcard { border:1px solid var(--border); border-radius:8px; padding:12px; }
-  .envcard.alert { border-color:var(--danger); box-shadow:0 0 10px rgba(248,81,73,.3); }
-  .envcard .vals { font-size:22px; font-weight:700; margin:4px 0; }
+  /* 테이블 */
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th,td { padding:7px 10px; text-align:left; border-bottom:1px solid var(--border); }
   th { color:var(--muted); font-weight:600; }
   tbody tr:hover { background:#1c2129; }
   #logWrap { max-height:320px; overflow-y:auto; }
+  /* 리포트 */
   #reportSummary { line-height:1.7; font-size:14px; background:#1c2129; border-left:3px solid var(--accent); padding:12px 14px; border-radius:0 6px 6px 0; }
   .kpis { display:flex; gap:12px; margin-bottom:12px; }
   .kpi { flex:1; text-align:center; border:1px solid var(--border); border-radius:8px; padding:12px; }
   .kpi .num { font-size:26px; font-weight:700; }
   .kpi .lbl { font-size:12px; color:var(--muted); }
   canvas { max-height:220px; }
-  .toolbar { display:flex; gap:8px; margin-bottom:10px; align-items:center; }
+  .toolbar { display:flex; gap:8px; margin-bottom:10px; }
   select,button { background:#21262d; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer; }
-  button.active { border-color:var(--accent); color:var(--accent); }
 </style>
 </head>
 <body>
@@ -64,28 +56,15 @@
   <div id="conn" class="conn off">서버 연결 대기중…</div>
 </header>
 
-<div id="fallBanner">🚨 낙상 감지 — <span id="fallText"></span></div>
-
 <div class="grid">
   <div class="panel full">
-    <h2>실시간 관제 현황 <span style="font-weight:400">(MQTT · 엣지 즉시판정)</span></h2>
+    <h2>실시간 관제 현황</h2>
     <div id="cards"><div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div></div>
   </div>
 
   <div class="panel">
-    <h2>중장비 환경 센서 <span style="font-weight:400">(온습도 · 30분 주기)</span></h2>
-    <div id="envCards"><div style="color:var(--muted);font-size:13px">환경 데이터 수신 대기중…</div></div>
-  </div>
-
-  <div class="panel">
-    <h2>이벤트 로그</h2>
+    <h2>Near-miss 이벤트 로그</h2>
     <div class="toolbar">
-      <select id="fltType">
-        <option value="">전체 유형</option>
-        <option value="nearmiss">근접위험</option>
-        <option value="fall">낙상</option>
-        <option value="env">이상환경</option>
-      </select>
       <select id="fltLevel">
         <option value="">전체 등급</option>
         <option value="2">경고 이상</option>
@@ -95,29 +74,25 @@
     </div>
     <div id="logWrap">
       <table>
-        <thead><tr><th>시간</th><th>유형</th><th>장비</th><th>작업자</th><th>거리</th><th>등급</th><th>비고</th></tr></thead>
+        <thead><tr><th>시간</th><th>장비</th><th>작업자</th><th>거리(cm)</th><th>상태</th><th>등급</th></tr></thead>
         <tbody id="logBody"></tbody>
       </table>
     </div>
   </div>
 
   <div class="panel">
-    <h2>안전 리포트
-      <button id="btnDaily" class="active" onclick="setPeriod('daily')">일일</button>
-      <button id="btnWeekly" onclick="setPeriod('weekly')">주간</button>
-    </h2>
+    <h2>일일 안전 리포트</h2>
     <div class="kpis">
-      <div class="kpi"><div class="num" id="kpiTotal">0</div><div class="lbl">총 이벤트</div></div>
+      <div class="kpi"><div class="num" id="kpiTotal">0</div><div class="lbl">총 Near-miss</div></div>
       <div class="kpi"><div class="num" id="kpiWarn" style="color:var(--warning)">0</div><div class="lbl">경고</div></div>
       <div class="kpi"><div class="num" id="kpiDanger" style="color:var(--danger)">0</div><div class="lbl">위험</div></div>
-      <div class="kpi"><div class="num" id="kpiFall" style="color:var(--danger)">0</div><div class="lbl">낙상</div></div>
     </div>
     <div id="reportSummary">데이터 수집 중…</div>
   </div>
 
   <div class="panel">
-    <h2 id="chartTitle">시간대별 이벤트</h2>
-    <canvas id="mainChart"></canvas>
+    <h2>시간대별 이벤트</h2>
+    <canvas id="hourChart"></canvas>
   </div>
 
   <div class="panel">
@@ -129,9 +104,7 @@
 <script>
 const stateKo = { idle:"정지", forward:"전진", reverse:"후진", working:"작업중" };
 const levelKo = ["안전","주의","경고","위험"];
-const typeKo = { nearmiss:"근접위험", fall:"낙상", env:"이상환경" };
-const live = {}, env = {};
-let period = "daily";
+const live = {};   // key -> 최신 데이터
 
 // ---------- WebSocket ----------
 let ws, wsTimer;
@@ -141,30 +114,16 @@ function connect() {
   ws.onclose = () => { setConn(false); clearInterval(wsTimer); setTimeout(connect, 2000); };
   ws.onmessage = e => {
     const d = JSON.parse(e.data);
-    if (d.type === "live") {
-      live[`${d.equip_id}|${d.worker_id}`] = d;
-      renderCards();
-      if (d.event_recorded) { loadEvents(); loadReport(); }
-    } else if (d.type === "env") {
-      env[d.equip_id] = d; renderEnv(); loadEvents(); loadReport();
-    } else if (d.type === "fall") {
-      showFall(d); loadEvents(); loadReport();
-    } else if (d.type === "batch") {
-      loadEvents(); loadReport();
-    }
+    if (d.type !== "live") return;
+    live[`${d.equip_id}|${d.worker_id}`] = d;
+    renderCards();
+    if (d.event_recorded) { loadEvents(); loadReport(); }
   };
 }
 function setConn(on) {
   const el = document.getElementById("conn");
   el.className = "conn " + (on?"on":"off");
-  el.textContent = on ? "서버 연결됨 (MQTT 수신중)" : "연결 끊김 — 재연결 중…";
-}
-function showFall(d) {
-  document.getElementById("fallText").textContent =
-    `${d.worker_id} · ${d.detail||"헬멧 자이로 감지"} (${new Date().toLocaleTimeString()})`;
-  const b = document.getElementById("fallBanner");
-  b.style.display = "block";
-  setTimeout(()=>{ b.style.display = "none"; }, 15000);
+  el.textContent = on ? "서버 연결됨" : "연결 끊김 — 재연결 중…";
 }
 
 // ---------- 실시간 카드 ----------
@@ -178,7 +137,6 @@ function renderCards() {
       <div class="pair">🚜 ${d.equip_id} ↔ 👷 ${d.worker_id} ${off?"(오프라인)":""}</div>
       <div class="dist">${d.distance_cm}<small style="font-size:14px;color:var(--muted)"> cm</small></div>
       <span class="badge l${d.risk_level}">${d.risk_label}</span>
-      ${d.edge_judged?'<span class="tbadge">엣지판정</span>':""}
       <div class="meta" style="margin-top:6px">
         상태: ${stateKo[d.equip_state]||d.equip_state} · 접근속도: ${d.speed_cms} cm/s
         ${d.battery!=null?` · 🔋${d.battery}%`:""}
@@ -186,75 +144,39 @@ function renderCards() {
     </div>`;
   }).join("") || '<div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div>';
 }
-setInterval(renderCards, 2000);
-
-// ---------- 환경 카드 ----------
-function renderEnv() {
-  const el = document.getElementById("envCards");
-  el.innerHTML = Object.values(env).map(d => `
-    <div class="envcard ${d.alert?"alert":""}">
-      <div style="font-size:13px;color:var(--muted)">🚜 ${d.equip_id}</div>
-      <div class="vals">🌡 ${d.temp_c??"-"}°C&nbsp;&nbsp;💧 ${d.humidity_pct??"-"}%</div>
-      <div style="font-size:12px;color:${d.alert?"var(--danger)":"var(--muted)"}">
-        ${d.alert?("⚠ "+d.alert):"정상 범위"} · ${String(d.ts).replace("T"," ").slice(5,16)}
-      </div>
-    </div>`).join("") || '<div style="color:var(--muted);font-size:13px">환경 데이터 수신 대기중…</div>';
-}
-async function loadEnvInit() {
-  const rows = await (await fetch("/api/env")).json();
-  rows.forEach(r => env[r.equip_id] = r); renderEnv();
-}
+setInterval(renderCards, 2000); // 오프라인 갱신용
 
 // ---------- 이벤트 로그 ----------
 async function loadEvents() {
   const lv = document.getElementById("fltLevel").value;
-  const tp = document.getElementById("fltType").value;
-  const res = await fetch(`/api/events?limit=100${lv?`&min_level=${lv}`:""}${tp?`&event_type=${tp}`:""}`);
+  const res = await fetch(`/api/events?limit=100${lv?`&min_level=${lv}`:""}`);
   const rows = await res.json();
   document.getElementById("logBody").innerHTML = rows.map(r => `<tr>
-    <td>${r.ts.replace("T"," ")}</td>
-    <td><span class="tbadge t-${r.event_type}">${typeKo[r.event_type]||r.event_type}</span></td>
-    <td>${r.equip_id??"-"}</td><td>${r.worker_id??"-"}</td>
-    <td>${r.distance_cm??"-"}</td>
+    <td>${r.ts.replace("T"," ")}</td><td>${r.equip_id}</td><td>${r.worker_id}</td>
+    <td>${r.distance_cm}</td><td>${stateKo[r.equip_state]||r.equip_state}</td>
     <td><span class="badge l${r.risk_level}">${levelKo[r.risk_level]}</span></td>
-    <td style="color:var(--muted)">${r.detail||""}</td>
   </tr>`).join("");
 }
 document.getElementById("fltLevel").onchange = loadEvents;
-document.getElementById("fltType").onchange = loadEvents;
 
 // ---------- 리포트 & 차트 ----------
-let mainChart, equipChart;
-function setPeriod(p) {
-  period = p;
-  document.getElementById("btnDaily").className = p==="daily"?"active":"";
-  document.getElementById("btnWeekly").className = p==="weekly"?"active":"";
-  document.getElementById("chartTitle").textContent = p==="daily"?"시간대별 이벤트":"일자별 이벤트";
-  if (mainChart) { mainChart.destroy(); mainChart = null; }
-  loadReport();
-}
+let hourChart, equipChart;
 async function loadReport() {
-  const r = await (await fetch(period==="daily"?"/api/report/daily":"/api/report/weekly")).json();
+  const r = await (await fetch("/api/report/daily")).json();
   document.getElementById("kpiTotal").textContent = r.total;
   document.getElementById("kpiWarn").textContent = r.by_level["2"]||0;
   document.getElementById("kpiDanger").textContent = r.by_level["3"]||0;
-  document.getElementById("kpiFall").textContent = r.by_type["fall"]||0;
   document.getElementById("reportSummary").textContent = r.summary;
 
-  let labels, data;
-  if (period === "daily") {
-    const hours = [...Array(24).keys()].map(h=>String(h).padStart(2,"0"));
-    labels = hours.map(h=>h+"시"); data = hours.map(h=>r.by_hour[h]||0);
-  } else {
-    labels = r.days.map(d=>d.slice(5)); data = r.days.map(d=>r.by_day[d]||0);
-  }
-  if (!mainChart) {
-    mainChart = new Chart(document.getElementById("mainChart"), {
+  const hours = [...Array(24).keys()].map(h=>String(h).padStart(2,"0"));
+  const hourData = hours.map(h=>r.by_hour[h]||0);
+  if (!hourChart) {
+    hourChart = new Chart(document.getElementById("hourChart"), {
       type:"bar",
-      data:{ labels, datasets:[{ label:"이벤트 수", data, backgroundColor:"#58a6ff" }]},
+      data:{ labels:hours.map(h=>h+"시"), datasets:[{ label:"이벤트 수", data:hourData, backgroundColor:"#58a6ff" }]},
       options:{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:"#8b949e",precision:0},grid:{color:"#21262d"}}, x:{ticks:{color:"#8b949e"},grid:{display:false}} } }
     });
-  } else { mainChart.data.labels = labels; mainChart.data.datasets[0].data = data; mainChart.update(); }
+  } else { hourChart.data.datasets[0].data = hourData; hourChart.update(); }
 
   const eqLabels = r.by_equip.map(e=>e.equip_id), eqData = r.by_equip.map(e=>e.c);
   if (!equipChart) {
@@ -269,7 +191,6 @@ async function loadReport() {
 connect();
 loadEvents();
 loadReport();
-loadEnvInit();
 setInterval(loadReport, 10000);
 </script>
 </body>

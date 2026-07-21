@@ -1,2 +1,4 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
+paho-mqtt>=2.0
+amqtt>=0.11        # 내장 브로커 (mosquitto 없을 때 python broker.py)
