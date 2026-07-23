@@ -1,44 +1,58 @@
-"""SafeON 설정 — 대회장에서 실측 후 이 파일만 수정하면 됨."""
+"""SafeON 설정 — 구현 세부 명세서 기준. 대회장 실측 후 이 파일만 수정."""
 
 # ---------- MQTT ----------
 MQTT_HOST = "localhost"     # 브로커 주소 (대회장: 관제 노트북 IP)
 MQTT_PORT = 1883
-MQTT_BASE = "safeon"        # 토픽 프리픽스
+MQTT_BASE = "safeon"
 
-# 구독 토픽 (서버)
-#   safeon/worker/{worker_id}/status  근로자 태그 상태 (1초 주기)
-#   safeon/worker/{worker_id}/event   낙상 등 이벤트 (발생 시)
-#   safeon/equip/{equip_id}/status    중장비 장치 상태 (1초 주기)
-#   safeon/equip/{equip_id}/env       온습도 (30분 주기)
-#   safeon/batch                      오프라인 저장 데이터 일괄 업로드 (백업 플랜)
+# 토픽:
+#   safeon/worker/{worker_id}/status      근접위험 데이터 (1초)
+#   safeon/worker/{worker_id}/event       낙상 등 이벤트
+#   safeon/equip/{equipment_id}/status    중장비측 근접위험 데이터 (1초)
+#   safeon/equip/{equipment_id}/env       온습도 (30분)
+#   safeon/equip/{equipment_id}/camera    후방 카메라 분석 결과
+#   safeon/batch                          오프라인 저장분 일괄 업로드
 
-# ---------- 거리 임계값 (cm) — 엣지(ESP32)와 동일 값 유지 ----------
-DIST_SAFE = 300      # 이상: 안전
-DIST_CAUTION = 150   # 150~300: 주의
-DIST_WARNING = 80    # 80~150: 경고, 미만: 위험
+# ---------- 거리 단계 (명세서: 3단계, 단위 m) ----------
+# 근거: WorkSafe Victoria 3m 배제구역 / 공단 스마트 안전장치 최소 감지성능 1m
+DIST_CAUTION_M = 3.0    # 초과: SAFE / 1~3m: CAUTION
+DIST_DANGER_M = 1.0     # 이하: DANGER
 
-# 위험 상태로 간주하는 장비 상태 (+1 등급 보정)
-HIGH_RISK_STATES = {"reverse", "working"}
-
-# 접근 속도 보정
-SPEED_WINDOW = 5
-SPEED_THRESHOLD = 60.0    # cm/s
+RISK_SAFE = "SAFE"
+RISK_CAUTION = "CAUTION"
+RISK_DANGER = "DANGER"
+RISK_OFFLINE = "OFFLINE"
+RISK_ORDER = {RISK_SAFE: 0, RISK_CAUTION: 1, RISK_DANGER: 2}
+RISK_LABELS = {RISK_SAFE: "안전", RISK_CAUTION: "주의", RISK_DANGER: "위험",
+               RISK_OFFLINE: "통신장애"}
 
 # 거리값 이동평균 필터 윈도우
 FILTER_WINDOW = 3
 
-# Near-miss로 기록하는 최소 등급 (2 = 경고)
-NEARMISS_MIN_LEVEL = 2
+# ---------- 장치상태 판정 (명세서 권고 기준) ----------
+DEGRADED_SEC = 2.0      # 거리장치 2초 이상 미수신 → DEGRADED
+OFFLINE_SEC = 5.0       # 5초 이상 미수신 → OFFLINE
+ENV_INTERVAL_SEC = 30 * 60   # 온습도 전송 주기 (30분)
+ENV_MISS_LIMIT = 2           # 예정 시각 2회 연속 누락 → OFFLINE
 
-# ---------- 환경 센서 (중장비 온습도, 30분 주기) ----------
-ENV_INTERVAL_SEC = 30 * 60   # 실제 주기: 30분 (시뮬레이터는 --env-interval로 가속)
-TEMP_MAX = 35.0              # 초과 시 이상온도 경보 (폭염)
-TEMP_MIN = -5.0              # 미만 시 이상온도 경보 (한파)
-HUMIDITY_MAX = 90.0
+# ---------- 체감온도 단계 (2026 고용노동부 대응지침, ℃) ----------
+HEAT_STAGES = [
+    (38.0, "EMERGENCY_STOP",   "긴급조치 외 옥외작업 중지 권고"),
+    (35.0, "STOP_RECOMMENDED", "14~17시 옥외작업 중지 권고"),
+    (33.0, "REST_REQUIRED",    "폭염작업 시 2시간 이내 20분 이상 휴식 (법적 기준)"),
+    (31.0, "HEAT_CAUTION",     "폭염작업 후보 — 냉방·통풍·시간조정·휴식 검토"),
+    (None, "NORMAL",           "정상 모니터링"),
+]
+HEAT_LABELS = {"NORMAL": "정상", "HEAT_CAUTION": "폭염주의",
+               "REST_REQUIRED": "휴식필요", "STOP_RECOMMENDED": "작업중지권고",
+               "EMERGENCY_STOP": "긴급중지"}
+
+# ---------- 사건(Incident) 규칙 기반 개선 권고 ----------
+INCIDENT_LONG_EXPOSURE_SEC = 5.0    # 위험 노출 지속 시 '장시간' 판단
+INCIDENT_REPEAT_WINDOW_SEC = 600    # 동일 쌍 반복 접근 판정 윈도우 (10분)
+INCIDENT_VERY_CLOSE_M = 0.5        # 초근접 기준
 
 # ---------- 기타 ----------
-OFFLINE_TIMEOUT = 5.0   # 태그 무통신 오프라인 간주 (초)
 DB_PATH = "safeon.db"
-
-RISK_LABELS = {0: "안전", 1: "주의", 2: "경고", 3: "위험"}
-EVENT_TYPES = {"nearmiss": "근접위험", "fall": "낙상감지", "env": "이상환경"}
+EVENT_TYPES = {"nearmiss": "근접위험", "fall": "낙상감지", "env": "이상환경",
+               "camera": "카메라감지"}

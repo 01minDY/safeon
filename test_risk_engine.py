@@ -1,67 +1,73 @@
-"""위험도 엔진 단위 테스트: python -m pytest test_risk_engine.py -v (또는 python test_risk_engine.py)"""
+"""엔진 단위 테스트 (명세서 기준): python test_risk_engine.py"""
 import risk_engine as re
 from risk_engine import PairTracker
 
 
-def test_base_level():
-    assert re.base_level(500) == 0
-    assert re.base_level(300) == 0
-    assert re.base_level(299) == 1
-    assert re.base_level(150) == 1
-    assert re.base_level(149) == 2
-    assert re.base_level(80) == 2
-    assert re.base_level(79) == 3
-    assert re.base_level(0) == 3
+def test_classify_3levels():
+    # 명세서: SAFE >3m / CAUTION 1~3m / DANGER ≤1m
+    assert re.classify(5.0) == "SAFE"
+    assert re.classify(3.01) == "SAFE"
+    assert re.classify(3.0) == "CAUTION"
+    assert re.classify(1.01) == "CAUTION"
+    assert re.classify(1.0) == "DANGER"
+    assert re.classify(0.3) == "DANGER"
 
 
-def test_state_adjust():
-    assert re.state_adjust(1, "reverse") == 2
-    assert re.state_adjust(1, "working") == 2
-    assert re.state_adjust(1, "forward") == 1
-    assert re.state_adjust(0, "reverse") == 0   # 안전이면 보정 없음
-    assert re.state_adjust(3, "reverse") == 3   # 상한 3
-
-
-def test_approach_speed():
-    # 2초 동안 300 -> 100cm 접근 = 100cm/s
-    samples = [(0.0, 300.0), (2.0, 100.0)]
-    assert re.approach_speed(samples) == 100.0
-    # 멀어지면 음수
-    assert re.approach_speed([(0.0, 100.0), (2.0, 300.0)]) == -100.0
-    assert re.approach_speed([(0.0, 100.0)]) == 0.0
-
-
-def test_speed_adjust():
-    assert re.speed_adjust(1, 100.0) == 2
-    assert re.speed_adjust(1, 10.0) == 1
-    assert re.speed_adjust(0, 100.0) == 0
+def test_near_miss_rule():
+    # 명세서 권고: DANGER이면 near_miss = true
+    assert re.is_near_miss("DANGER") is True
+    assert re.is_near_miss("CAUTION") is False
+    assert re.is_near_miss("SAFE") is False
 
 
 def test_tracker_filter_and_debounce():
     t = PairTracker()
-    _, lv, _, ch = t.update(500, "idle", now=0.0)
-    assert lv == 0 and not ch
-    # 근접 샘플이 누적되면 필터값이 수렴하여 등급 상승
-    t.update(100, "reverse", now=1.0)
-    t.update(100, "reverse", now=2.0)
-    _, lv, _, ch = t.update(100, "reverse", now=3.0)
-    assert lv >= 2  # 필터 수렴 후 경고 이상
-    # 동일 조건 유지 시 changed=False (디바운스)
-    _, lv2, _, ch2 = t.update(100, "reverse", now=4.0)
-    assert lv2 == lv and not ch2
+    _, lv, ch = t.update(5.0, now=0.0)
+    assert lv == "SAFE" and not ch
+    t.update(0.8, now=1.0)
+    t.update(0.8, now=2.0)
+    _, lv, ch = t.update(0.8, now=3.0)
+    assert lv == "DANGER"          # 필터 수렴 후 위험
+    _, lv2, ch2 = t.update(0.8, now=4.0)
+    assert lv2 == lv and not ch2   # 유지 시 changed=False (디바운스)
+
+
+def test_edge_level_priority():
+    t = PairTracker()
+    # 엣지(ESP32) 판정값이 오면 서버 계산보다 우선
+    _, lv, _ = t.update(5.0, edge_level="DANGER", now=0.0)
+    assert lv == "DANGER"
 
 
 def test_outlier_smoothing():
     t = PairTracker()
-    t.update(300, "idle", now=0.0)
-    t.update(300, "idle", now=1.0)
-    filtered, _, _, _ = t.update(30, "idle", now=2.0)  # 이상치 1개
-    assert filtered > 100  # 이동평균으로 완화됨
+    t.update(4.0, now=0.0)
+    t.update(4.0, now=1.0)
+    filtered, _, _ = t.update(0.4, now=2.0)   # 이상치 1개
+    assert filtered > 1.0                      # 이동평균으로 완화
 
 
-def test_alert_mapping():
-    assert re.alert_for(0)["led"] == "green"
-    assert re.alert_for(3) == {"buzzer": True, "vibration": True, "led": "red"}
+def test_apparent_temp_reasonable():
+    # 기상청 여름철 체감온도: 33°C/70% → 대략 35~38°C 범위
+    ac = re.apparent_temp(33.0, 70.0)
+    assert 34.0 < ac < 40.0
+    # 습도 낮으면 체감온도도 낮아짐
+    assert re.apparent_temp(33.0, 30.0) < ac
+
+
+def test_heat_stages():
+    assert re.heat_stage(28.0)[0] == "NORMAL"
+    assert re.heat_stage(31.5)[0] == "HEAT_CAUTION"
+    assert re.heat_stage(33.0)[0] == "REST_REQUIRED"
+    assert re.heat_stage(35.0)[0] == "STOP_RECOMMENDED"
+    assert re.heat_stage(38.0)[0] == "EMERGENCY_STOP"
+
+
+def test_recommend_rules():
+    r = re.recommend(duration_sec=8.0, min_distance_m=0.4, repeat_count=3)
+    assert "초근접" in r and "지속" in r and "반복" in r
+    r2 = re.recommend(duration_sec=1.0, min_distance_m=0.9, repeat_count=1)
+    assert "단발성" in r2
 
 
 if __name__ == "__main__":
