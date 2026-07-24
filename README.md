@@ -71,14 +71,14 @@ python simulator.py --batch-demo       # 통신두절→로컬저장→일괄업
 - `-v` 모드는 수신 토픽을 콘솔에 출력 — ESP32 발행 확인용 당일 디버깅 1차 도구.
 - 접속 테스트: `mosquitto_sub -h <노트북IP> -t "safeon/#" -v`
 
-## 대회 당일 ESP32 전환 (이것만 하면 됨)
+## ESP32 전환
 
 1. 관제 노트북에서 `mosquitto -c mosquitto.conf -v` + 서버 실행, 노트북 IP 확인
 2. ESP32 펌웨어에서 브로커 주소를 노트북 IP로 설정
 3. 아래 토픽/JSON 규약대로 발행 — **시뮬레이터와 완전히 동일하므로 서버·대시보드 수정 불필요**
 4. 거리 임계값 튜닝은 `config.py`만 수정
 
-## MQTT 토픽·JSON 규약 (명세서 기준, HW팀 공유용)
+## MQTT 토픽·JSON 규약
 
 | 토픽 | 주기 | 내용 |
 |---|---|---|
