@@ -1,8 +1,14 @@
 """SQLite 저장소 — 이벤트·사건(Incident)·온습도 로그 (명세서 기준)."""
 import sqlite3
+import threading
 from datetime import datetime, date, timedelta
 
 import config
+
+
+# FastAPI 요청 스레드와 MQTT 스레드가 같은 연결을 동시에 쓰지 않도록 보호
+_DB_LOCK = threading.RLock()
+
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -15,6 +21,7 @@ CREATE TABLE IF NOT EXISTS events (
     risk_level TEXT NOT NULL DEFAULT 'SAFE',       -- SAFE | CAUTION | DANGER
     detail TEXT DEFAULT ''
 );
+
 CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 
 -- 아차사고 보고서: DANGER 진입~해제를 하나의 사건으로 관리 (명세서 '관제팀 계산')
@@ -41,15 +48,27 @@ CREATE TABLE IF NOT EXISTS env_logs (
     heat_stage TEXT,
     sensor_status TEXT DEFAULT 'NORMAL'
 );
+
 CREATE INDEX IF NOT EXISTS idx_env_ts ON env_logs(ts);
 """
 
 
 def get_conn(path: str = config.DB_PATH) -> sqlite3.Connection:
-    # FastAPI는 멀티스레드로 sync 엔드포인트를 실행하므로 check_same_thread=False 필요
-    conn = sqlite3.connect(path, check_same_thread=False)
+    """SQLite 연결 생성."""
+    conn = sqlite3.connect(
+        path,
+        check_same_thread=False,
+        timeout=10.0,
+    )
     conn.row_factory = sqlite3.Row
-    conn.executescript(_SCHEMA)
+
+    with _DB_LOCK:
+        conn.executescript(_SCHEMA)
+
+        # 동시 읽기 성능 및 잠금 충돌 완화
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+
     return conn
 
 
@@ -213,11 +232,31 @@ def range_stats(conn, dates: list[str]):
 
 
 def daily_stats(conn, date_str=None):
-    d = date_str or date.today().isoformat()
-    return {"date": d, **range_stats(conn, [d])}
+    """일일 이벤트 통계."""
+    selected_date = date_str or date.today().isoformat()
+
+    return {
+        "date": selected_date,
+        **range_stats(conn, [selected_date]),
+    }
 
 
 def weekly_stats(conn, end_date=None):
-    end = date.fromisoformat(end_date) if end_date else date.today()
-    days = [(end - timedelta(days=i)).isoformat() for i in range(6, -1, -1)]
-    return {"start": days[0], "end": days[-1], "days": days, **range_stats(conn, days)}
+    """최근 7일 이벤트 통계."""
+    end = (
+        date.fromisoformat(end_date)
+        if end_date
+        else date.today()
+    )
+
+    days = [
+        (end - timedelta(days=i)).isoformat()
+        for i in range(6, -1, -1)
+    ]
+
+    return {
+        "start": days[0],
+        "end": days[-1],
+        "days": days,
+        **range_stats(conn, days),
+    }

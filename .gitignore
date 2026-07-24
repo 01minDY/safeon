@@ -3,3 +3,15 @@ __pycache__/
 safeon.db
 .venv/
 venv/
+
+# SQLite runtime files
+safeon.db
+safeon.db-wal
+safeon.db-shm
+*.db-wal
+*.db-shm
+
+# Python runtime files
+.venv/
+__pycache__/
+*.pyc
