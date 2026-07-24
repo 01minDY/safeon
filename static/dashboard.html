@@ -75,7 +75,7 @@ h1{font-size:25px;margin:0} h2{font-size:16px;margin:0}
 .heat-scale{height:9px;border-radius:7px;background:linear-gradient(90deg,#12a150 0 36%,#e6c51c 36% 53%,#f29b17 53% 67%,#ef4a34 67% 83%,#b61630 83%)}
 .heat-marker{height:18px;width:3px;background:#17263a;position:relative;top:-5px;transition:left .3s}
 .guidance{font-size:12px;background:#f5f1ff;color:#52379e;border-radius:8px;padding:10px;margin-top:12px}
-.grid-bottom{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-top:14px}
+.grid-bottom{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-top:14px}
 canvas{display:block;width:100%;height:215px}
 table{width:100%;border-collapse:collapse}
 th{background:#f5f7fa;color:#506078;font-size:11px;text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -84,9 +84,21 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 #incidentRows td:first-child,#actionRows td:first-child,#actionRows td:nth-child(2){white-space:nowrap}
 .device-list{display:grid;gap:8px}.device{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:8px}
 .device-icon{width:32px;height:32px;display:grid;place-items:center;background:#edf4fc;border-radius:9px}
-.camera-view{min-height:155px;border-radius:9px;background:linear-gradient(145deg,#14273d,#09111d);color:#fff;padding:14px;position:relative;overflow:hidden}
-.camera-view:after{content:"";position:absolute;inset:20% 28%;border:2px solid rgba(255,255,255,.5);border-radius:5px}
-.camera-detected{position:absolute;z-index:2;bottom:12px;left:12px;background:#e23636;padding:5px 8px;border-radius:5px;font-size:11px;font-weight:900}
+.live-checklist-card{padding:0;overflow:hidden;margin-top:14px}
+.live-checklist-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 18px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#f9fbfe,#eef5ff)}
+.live-checklist-head h2{font-size:17px;margin:0 0 4px}.live-checklist-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.live-checklist-grid{display:grid;grid-template-columns:1.05fr .95fr}
+.checklist-pane{padding:18px;min-width:0}.checklist-pane+.checklist-pane{border-left:1px solid var(--line)}
+.checklist-pane-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.checklist-pane-title h3{font-size:14px;margin:0 0 4px}
+.checklist-list{display:grid;gap:8px}.checklist-item{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid #e3eaf3;border-radius:9px;background:#fff;cursor:pointer}
+.checklist-item:hover{background:#f9fbfe;border-color:#cbd9e9}.checklist-item:has(input:checked){background:#f0faf5;border-color:#b7dfc9}
+.checklist-item input{width:17px;height:17px;accent-color:var(--green);cursor:pointer}.checklist-item input:disabled{cursor:not-allowed}
+.checklist-copy{min-width:0}.checklist-copy strong{display:block;font-size:12px;line-height:1.45}.checklist-copy span{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.checklist-deadline{white-space:nowrap;background:#eef3f8;color:#4e6075;border-radius:99px;padding:4px 8px;font-size:10px;font-weight:850}
+.checklist-progress{margin-top:14px}.checklist-progress .completion-head{margin-bottom:7px}
+.legal-source{display:grid;gap:4px;background:#f4f7fb;border-left:4px solid var(--blue);border-radius:7px;padding:11px 12px;margin-bottom:12px;color:#43566d;font-size:11px;line-height:1.55}
+.legal-source strong{font-size:12px;color:#24384f}.legal-source a{color:var(--blue);font-weight:850;text-decoration:none;justify-self:start}.legal-source a:hover{text-decoration:underline}
+.legal-note{margin-top:12px;padding:10px 11px;background:#fff8e8;border:1px solid #f1d28d;border-radius:8px;color:#79530b;font-size:11px;line-height:1.6}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:12px;border-radius:10px;margin-bottom:14px}
 .toolbar select,.toolbar input{border:1px solid #cbd6e3;border-radius:7px;padding:8px;background:#fff}
 .wide-card{margin-bottom:14px}
@@ -123,10 +135,10 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .recommendation-footer{padding:15px 16px}.completion-head{display:flex;justify-content:space-between;margin-bottom:7px;font-size:12px;font-weight:800}.completion-track{height:9px;background:#e7edf4;border-radius:9px;overflow:hidden}.completion-track i{display:block;height:100%;background:linear-gradient(90deg,#1268e8,#12a150);transition:width .25s}.recommendation-note{margin-top:12px;padding:10px 12px;background:#f4f7fb;border-radius:8px;color:#627187;font-size:11px}.recommendation-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}.btn:disabled{opacity:.55;cursor:not-allowed}
 .toast{position:fixed;right:24px;bottom:24px;background:#17283c;color:#fff;padding:12px 16px;border-radius:8px;box-shadow:var(--shadow);transform:translateY(100px);opacity:0;transition:.25s;z-index:50}
 .toast.show{transform:none;opacity:1}
-@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}.grid-bottom>.card:first-child{grid-column:1/-1}}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}}
 @media(max-width:1100px){.recommendation-row{grid-template-columns:42px 1fr 145px}.recommendation-basis{grid-column:2/3}}
-@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.report-grid,.recommendation-risk-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child,.grid-bottom>.card:first-child{grid-column:auto}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
-@media(max-width:560px){.page-head,.recommendation-demo,.incident-report-hero{align-items:flex-start;flex-direction:column}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
+@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.live-checklist-grid,.report-grid,.recommendation-risk-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child{grid-column:auto}.checklist-pane+.checklist-pane{border-left:0;border-top:1px solid var(--line)}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
+@media(max-width:560px){.page-head,.recommendation-demo,.incident-report-hero,.live-checklist-head{align-items:flex-start;flex-direction:column}.live-checklist-head-actions{justify-content:flex-start}.checklist-item{grid-template-columns:22px 1fr}.checklist-deadline{grid-column:2;justify-self:start}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -153,7 +165,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
     </header>
     <main>
       <section class="view active" id="view-live">
-        <div class="page-head"><div><h1>실시간 안전관제</h1><div class="subtle">중장비-근로자 근접위험과 환경·카메라 상태를 실시간으로 확인합니다.</div></div><button class="btn" onclick="refreshAll()">새로고침</button></div>
+        <div class="page-head"><div><h1>실시간 안전관제</h1><div class="subtle">중장비-근로자 근접위험과 환경·장치 상태를 실시간으로 확인합니다.</div></div><button class="btn" onclick="refreshAll()">새로고침</button></div>
         <div class="kpis">
           <div class="kpi"><div class="kpi-icon">↔</div><div><div class="kpi-label">현재 거리</div><div class="kpi-value mono" id="kpiDistance">--</div><div class="kpi-note">근로자 ↔ 중장비</div></div></div>
           <div class="kpi"><div class="kpi-icon">!</div><div><div class="kpi-label">위험 단계</div><div class="kpi-value" id="kpiRisk">--</div><div class="kpi-note">1m 이하 DANGER</div></div></div>
@@ -180,8 +192,43 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
         <div class="grid-bottom">
           <article class="card"><div class="card-head"><h2>거리 추이</h2><span class="subtle">위험 1m · 주의 3m</span></div><canvas id="distanceChart"></canvas></article>
           <article class="card"><div class="card-head"><h2>장치 상태</h2><button class="btn" onclick="showView('devices')">상세</button></div><div class="device-list" id="devicePreview"></div></article>
-          <article class="card"><div class="card-head"><h2>후방 카메라 분석</h2><span class="subtle" id="cameraStatus">--</span></div><div id="cameraPanel"><div class="empty">카메라 데이터 수신 대기 중…</div></div></article>
         </div>
+        <section class="card live-checklist-card" aria-labelledby="liveChecklistTitle">
+          <div class="live-checklist-head">
+            <div><h2 id="liveChecklistTitle">권고안 실행 체크리스트</h2><div class="subtle">반복 접근·경보 실패·장시간 위험상태를 기준으로 생성된 개선조치를 확인합니다.</div></div>
+            <div class="live-checklist-head-actions"><span class="badge OPEN" id="liveChecklistEvent">사건 대기</span><button class="btn" type="button" onclick="showView('actions')">개선권고 상세</button></div>
+          </div>
+          <div class="live-checklist-grid">
+            <section class="checklist-pane" aria-labelledby="recommendationChecklistTitle">
+              <div class="checklist-pane-title"><div><h3 id="recommendationChecklistTitle">자동 생성 개선권고</h3><div class="subtle">완료한 항목을 체크하면 조치 상태에 반영됩니다.</div></div><span class="badge HIGH">위험성평가 연계</span></div>
+              <div class="checklist-list" id="liveRecommendationChecklist"><div class="empty">최근 위험사건을 확인하는 중…</div></div>
+              <div class="checklist-progress">
+                <div class="completion-head"><span>권고 조치 진행률</span><strong id="liveChecklistProgress">0% 완료</strong></div>
+                <div class="completion-track"><i id="liveChecklistBar" style="width:0%"></i></div>
+              </div>
+            </section>
+            <section class="checklist-pane" aria-labelledby="legalChecklistTitle">
+              <div class="checklist-pane-title"><div><h3 id="legalChecklistTitle">지게차 작업시작 전 법정 점검</h3><div class="subtle">관리감독자가 작업 시작 전에 직접 확인합니다.</div></div><span class="badge CAUTION">필수 점검</span></div>
+              <div class="legal-source">
+                <strong>산업안전보건기준에 관한 규칙</strong>
+                <span>[시행 2026. 3. 2.] [고용노동부령 제450호, 2025. 9. 1., 일부개정]</span>
+                <span>별표 3 작업시작 전 점검사항(제35조제2항 관련) — 지게차 작업</span>
+                <a href="https://law.go.kr/lsInfoP.do?ancYnChk=0&amp;lsId=007363" target="_blank" rel="noopener noreferrer">국가법령정보센터 원문 ↗</a>
+              </div>
+              <div class="checklist-list" id="legalChecklist">
+                <label class="checklist-item"><input type="checkbox" data-legal-check><span class="checklist-copy"><strong>제동장치 및 조종장치 기능의 이상 유무</strong><span>브레이크·조향 기능을 작업 전에 확인</span></span><span class="checklist-deadline">작업 전</span></label>
+                <label class="checklist-item"><input type="checkbox" data-legal-check><span class="checklist-copy"><strong>하역장치 및 유압장치 기능의 이상 유무</strong><span>포크·마스트·유압계통의 작동 상태 확인</span></span><span class="checklist-deadline">작업 전</span></label>
+                <label class="checklist-item"><input type="checkbox" data-legal-check><span class="checklist-copy"><strong>바퀴의 이상 유무</strong><span>타이어 손상·마모와 체결 상태 확인</span></span><span class="checklist-deadline">작업 전</span></label>
+                <label class="checklist-item"><input type="checkbox" data-legal-check><span class="checklist-copy"><strong>전조등·후미등·방향지시기 및 경보장치 기능의 이상 유무</strong><span>등화류와 경보음의 정상 작동 확인</span></span><span class="checklist-deadline">작업 전</span></label>
+              </div>
+              <div class="checklist-progress">
+                <div class="completion-head"><span>법정 점검 진행률</span><strong id="legalChecklistProgress">0/4 완료</strong></div>
+                <div class="completion-track"><i id="legalChecklistBar" style="width:0%"></i></div>
+              </div>
+              <div class="legal-note"><strong>이상 발견 시:</strong> 작업을 시작하지 말고 즉시 수리하거나 필요한 조치를 실시합니다. (제35조제3항)</div>
+            </section>
+          </div>
+        </section>
       </section>
 
       <section class="view" id="view-incidents">
@@ -274,9 +321,17 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const state={proximity:new Map(),environment:new Map(),cameras:new Map(),incidents:[],incidentReport:null,devices:[],actions:[],report:null,recommendation:null,recommendationFilter:"ALL",distanceHistory:[]};
+const state={proximity:new Map(),environment:new Map(),incidents:[],incidentReport:null,devices:[],actions:[],report:null,recommendation:null,recommendationFilter:"ALL",distanceHistory:[]};
 const riskKo={SAFE:"안전",CAUTION:"주의",DANGER:"위험",OFFLINE:"통신장애"};
-const typeIcon={WORKER:"♟",EQUIPMENT:"▣",CAMERA:"◉"};
+const typeIcon={WORKER:"♟",EQUIPMENT:"▣"};
+const recommendationChecklistTemplates=[
+  {category:"URGENT",title:"근로자 통로와 지게차 운행경로 즉시 분리",due:"즉시"},
+  {category:"URGENT",title:"지게차 제동·조종·경보장치 긴급 점검",due:"24시간"},
+  {category:"PRIORITY",title:"현장 제한속도와 감속구간 재설정",due:"3일"},
+  {category:"PRIORITY",title:"후방 사각지대 보조수단 보강",due:"3일"},
+  {category:"PRIORITY",title:"반복 발생 조합 대상 맞춤 안전교육",due:"7일"},
+  {category:"REGULAR",title:"하역장치·유압장치·바퀴 상태 정기점검",due:"정기"}
+];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDateTime=v=>v?new Date(v).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
@@ -366,7 +421,6 @@ async function refreshAll(){
     const [live,incidents,devices,report,actions,recommendation,incidentReport]=await Promise.all([api("/api/live"),api("/api/incidents?limit=200"),api("/api/devices"),api("/api/report/weekly"),api("/api/actions"),api("/api/recommendations/latest"),selectedEventId?api(`/api/incidents/${encodeURIComponent(selectedEventId)}`):Promise.resolve(null)]);
     live.proximity.forEach(x=>state.proximity.set(`${x.equipment_id}:${x.worker_id}`,x));
     live.environment.forEach(x=>state.environment.set(x.equipment_id,x));
-    live.cameras.forEach(x=>state.cameras.set(x.equipment_id,x));
     state.incidents=incidents;state.devices=devices;state.report=report;state.actions=actions;state.recommendation=recommendation;if(incidentReport)state.incidentReport=incidentReport;
     renderAll();
     if(incidentReport)renderIncidentReport();
@@ -374,7 +428,7 @@ async function refreshAll(){
 }
 function renderAll(){renderLive();renderIncidents();renderEnvironment();renderDevices();renderReport();renderActions()}
 function renderLive(){
-  const p=latest(state.proximity),env=latest(state.environment),cam=latest(state.cameras);
+  const p=latest(state.proximity),env=latest(state.environment);
   document.getElementById("kpiDistance").textContent=p?`${Number(p.distance_m).toFixed(2)}m`:"--";
   const risk=document.getElementById("kpiRisk");risk.textContent=p?riskKo[p.risk_level]:"--";risk.style.color=p?.risk_level==="DANGER"?"var(--red)":p?.risk_level==="CAUTION"?"var(--yellow)":p?.risk_level==="SAFE"?"var(--green)":"";
   document.getElementById("kpiActive").textContent=`${state.incidents.filter(x=>!x.end_ts).length}건`;
@@ -385,7 +439,7 @@ function renderLive(){
   document.getElementById("kpiEquipment").textContent=`${equipment.filter(x=>x.status==="ONLINE").length}/${equipment.length}`;
   const banner=document.getElementById("dangerBanner");banner.classList.toggle("show",p?.risk_level==="DANGER");
   if(p?.risk_level==="DANGER")document.getElementById("dangerText").textContent=`위험 경보 — ${p.worker_id} ↔ ${p.equipment_id}, ${Number(p.distance_m).toFixed(2)}m`;
-  renderLiveStage(p);renderRecent();renderHeat(env);renderDevicePreview();renderCamera(cam);drawDistanceChart();
+  renderLiveStage(p);renderRecent();renderHeat(env);renderDevicePreview();drawDistanceChart();
 }
 function renderLiveStage(p){
   const el=document.getElementById("liveStage");if(!p){el.innerHTML='<div class="empty">근접위험 데이터 수신 대기 중…</div>';return}
@@ -404,13 +458,8 @@ function renderHeat(env){
   el.innerHTML=`<div class="heat-number">${Number(env.apparent_temperature_c).toFixed(1)}℃</div><div>${badge(env.heat_level)}</div><div class="heat-grid"><div class="mini-metric"><span class="subtle">온도</span><strong>${Number(env.temperature_c).toFixed(1)}℃</strong></div><div class="mini-metric"><span class="subtle">습도</span><strong>${Number(env.humidity_pct).toFixed(1)}%</strong></div></div><div class="heat-scale"><i class="heat-marker" style="left:${marker}%"></i></div><div class="guidance">${esc(env.guidance)}${env.legal_basis==="administrative_recommendation"?"<br><strong>※ 행정지침상 권고기준</strong>":""}</div>`;
 }
 function renderDevicePreview(){
-  const el=document.getElementById("devicePreview"),items=state.devices.slice(0,5);if(!items.length){el.innerHTML='<div class="empty">장치 데이터 없음</div>';return}
+  const el=document.getElementById("devicePreview"),items=state.devices.filter(x=>["WORKER","EQUIPMENT"].includes(x.device_type)).slice(0,5);if(!items.length){el.innerHTML='<div class="empty">장치 데이터 없음</div>';return}
   el.innerHTML=items.map(x=>`<div class="device"><div class="device-icon">${typeIcon[x.device_type]||"•"}</div><div><strong>${esc(x.device_id)}</strong><div class="subtle">${esc(x.device_type)} · ${Number(x.online_rate).toFixed(1)}%</div></div>${badge(x.status)}</div>`).join("");
-}
-function renderCamera(cam){
-  const el=document.getElementById("cameraPanel");if(!cam){el.innerHTML='<div class="empty">카메라 데이터 수신 대기 중…</div>';return}
-  document.getElementById("cameraStatus").innerHTML=badge(cam.camera_status);
-  el.innerHTML=`<div class="camera-view"><div>${esc(cam.equipment_id)} 후방 분석</div><div class="subtle" style="color:#aebdce">${fmtTime(cam.timestamp)}</div><span class="camera-detected" style="background:${cam.person_detected?"#e23636":"#16894d"}">${cam.person_detected?"사람 감지":"감지 없음"} · ${(Number(cam.confidence)*100).toFixed(0)}%</span></div>`;
 }
 function renderIncidents(){
   const filter=document.getElementById("incidentStatus")?.value||"",items=state.incidents.filter(x=>!filter||x.action_status===filter),el=document.getElementById("incidentRows");
@@ -456,6 +505,31 @@ function renderActions(){
   el.querySelectorAll("[data-action-select]").forEach(s=>s.onchange=()=>updateAction(s.dataset.actionSelect,s.value));
   const completion=Number(bundle.completion_rate||0);document.getElementById("completionLabel").textContent=`${completion}% 완료`;document.getElementById("completionBar").style.width=`${completion}%`;
   const approve=document.getElementById("approveRecommendation");approve.disabled=!assessment||assessment.approved;approve.textContent=assessment?.approved?"승인 완료":"개선권고 승인";
+  renderLiveChecklist();
+}
+function renderLiveChecklist(){
+  const bundle=state.recommendation||{incident:null,actions:[],completion_rate:0},actions=bundle.actions||[],hasActions=actions.length>0;
+  const items=hasActions?actions:recommendationChecklistTemplates;
+  const event=document.getElementById("liveChecklistEvent");event.textContent=bundle.incident?.event_id||"사건 발생 시 자동 생성";event.className=`badge ${hasActions?"DANGER":"OPEN"}`;
+  const categoryKo={URGENT:"긴급",PRIORITY:"우선",REGULAR:"정기"},statusKo={OPEN:"미조치",IN_PROGRESS:"진행 중",CLOSED:"완료"};
+  const el=document.getElementById("liveRecommendationChecklist");
+  el.innerHTML=items.map(x=>{
+    const status=x.status||"OPEN",due=x.due_date||x.due||"--",disabled=hasActions?"":"disabled";
+    return `<label class="checklist-item"><input type="checkbox" data-live-action="${hasActions?esc(x.action_id):""}" ${status==="CLOSED"?"checked":""} ${disabled}><span class="checklist-copy"><strong>${esc(x.title)}</strong><span>${categoryKo[x.category]||x.category} · ${statusKo[status]||status}${hasActions?"":" · 사건 발생 후 상태 연동"}</span></span><span class="checklist-deadline">${esc(due)}</span></label>`;
+  }).join("");
+  if(hasActions)el.querySelectorAll("[data-live-action]").forEach(box=>box.onchange=()=>updateAction(box.dataset.liveAction,box.checked?"CLOSED":"OPEN"));
+  const completion=Math.max(0,Math.min(100,Number(bundle.completion_rate||0)));
+  document.getElementById("liveChecklistProgress").textContent=`${completion}% 완료`;
+  document.getElementById("liveChecklistBar").style.width=`${completion}%`;
+}
+function renderLegalChecklistProgress(){
+  const boxes=[...document.querySelectorAll("[data-legal-check]")],done=boxes.filter(x=>x.checked).length,pct=boxes.length?done/boxes.length*100:0;
+  document.getElementById("legalChecklistProgress").textContent=`${done}/${boxes.length} 완료`;
+  document.getElementById("legalChecklistBar").style.width=`${pct}%`;
+}
+function bindLegalChecklist(){
+  document.querySelectorAll("[data-legal-check]").forEach(box=>box.addEventListener("change",renderLegalChecklistProgress));
+  renderLegalChecklistProgress();
 }
 async function updateAction(id,status){try{await api(`/api/actions/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status})});toast(`${id} 상태가 ${status}로 변경됐습니다.`);await loadIncidentsAndActions()}catch(e){toast("개선조치 변경에 실패했습니다.")}}
 function setRecommendationFilter(filter){state.recommendationFilter=filter;renderActions()}
@@ -470,12 +544,12 @@ function drawDistanceChart(){
 }
 function drawReportChart(){
   const o=prepCanvas("reportChart"),r=state.report;if(!o||!r)return;const {x,w,h}=o,entries=Object.entries(r.by_day),pad=34,max=Math.max(1,...entries.map(x=>x[1]));x.strokeStyle="#dce4ef";x.beginPath();x.moveTo(pad,10);x.lineTo(pad,h-pad);x.lineTo(w-10,h-pad);x.stroke();const slot=(w-pad-20)/Math.max(1,entries.length);entries.forEach(([day,val],i)=>{const bh=(h-pad-20)*val/max,bx=pad+i*slot+slot*.2,by=h-pad-bh;x.fillStyle="#2377e8";x.fillRect(bx,by,slot*.6,bh);x.fillStyle="#52637a";x.font="11px sans-serif";x.fillText(String(val),bx+slot*.25,by-5);x.save();x.translate(bx,h-12);x.rotate(-.35);x.fillText(day.slice(5),0,0);x.restore()});if(!entries.length){x.fillStyle="#8090a3";x.fillText("주간 위험사건 데이터가 없습니다.",pad,95)}}
-function connectWs(){const protocol=location.protocol==="https:"?"wss":"ws",ws=new WebSocket(`${protocol}://${location.host}/ws/live`);let timer;ws.onopen=()=>{document.getElementById("systemText").textContent="시스템 정상";timer=setInterval(()=>ws.send("ping"),15000)};ws.onmessage=async e=>{const d=JSON.parse(e.data);if(d.type==="proximity"){state.proximity.set(`${d.equipment_id}:${d.worker_id}`,d);state.distanceHistory.push(Number(d.distance_m));if(state.distanceHistory.length>120)state.distanceHistory.shift();renderLive();if(d.incident_transition)await loadIncidentsAndActions()}else if(d.type==="environment"){state.environment.set(d.equipment_id,d);renderEnvironment();renderLive()}else if(d.type==="camera"){state.cameras.set(d.equipment_id,d);renderLive()}else if(["device","incident","incident_action","improvement_action","recommendation"].includes(d.type)){await refreshAll()}};ws.onclose=()=>{clearInterval(timer);document.getElementById("systemText").textContent="재연결 중";setTimeout(connectWs,2000)}}
+function connectWs(){const protocol=location.protocol==="https:"?"wss":"ws",ws=new WebSocket(`${protocol}://${location.host}/ws/live`);let timer;ws.onopen=()=>{document.getElementById("systemText").textContent="시스템 정상";timer=setInterval(()=>ws.send("ping"),15000)};ws.onmessage=async e=>{const d=JSON.parse(e.data);if(d.type==="proximity"){state.proximity.set(`${d.equipment_id}:${d.worker_id}`,d);state.distanceHistory.push(Number(d.distance_m));if(state.distanceHistory.length>120)state.distanceHistory.shift();renderLive();if(d.incident_transition)await loadIncidentsAndActions()}else if(d.type==="environment"){state.environment.set(d.equipment_id,d);renderEnvironment();renderLive()}else if(["device","incident","incident_action","improvement_action","recommendation"].includes(d.type)){await refreshAll()}};ws.onclose=()=>{clearInterval(timer);document.getElementById("systemText").textContent="재연결 중";setTimeout(connectWs,2000)}}
 async function pollDevices(){try{state.devices=await api("/api/devices");renderDevices();renderDevicePreview();renderLive()}catch{}}
 setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleString("ko-KR"),1000);
 setInterval(pollDevices,2000);
 window.addEventListener("resize",()=>{drawDistanceChart();drawReportChart()});
-refreshAll();connectWs();
+bindLegalChecklist();refreshAll();connectWs();
 </script>
 </body>
 </html>
