@@ -1,197 +1,102 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeON 안전관제 대시보드</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e;
-    --safe:#3fb950; --caution:#d29922; --warning:#f0883e; --danger:#f85149; --accent:#58a6ff;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Malgun Gothic',sans-serif; padding:20px; }
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-  h1 { font-size:22px; } h1 span { color:var(--accent); }
-  .conn { font-size:13px; color:var(--muted); }
-  .conn.on::before { content:"● "; color:var(--safe); }
-  .conn.off::before { content:"● "; color:var(--danger); }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
-  .panel h2 { font-size:15px; color:var(--muted); margin-bottom:12px; font-weight:600; }
-  .full { grid-column:1 / -1; }
-  /* 실시간 카드 */
-  #cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
-  .card { border:1px solid var(--border); border-radius:8px; padding:14px; transition:border-color .2s; }
-  .card .pair { font-size:13px; color:var(--muted); }
-  .card .dist { font-size:30px; font-weight:700; margin:6px 0; }
-  .card .meta { font-size:12px; color:var(--muted); }
-  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:700; color:#000; }
-  .l0 { background:var(--safe);} .l1{ background:var(--caution);} .l2{ background:var(--warning);} .l3{ background:var(--danger); animation:blink 0.6s infinite;}
-  .card.l3-border { border-color:var(--danger); box-shadow:0 0 12px rgba(248,81,73,.4); }
-  .card.l2-border { border-color:var(--warning); }
-  @keyframes blink { 50% { opacity:.4; } }
-  .card.offline { opacity:.45; }
-  /* 테이블 */
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th,td { padding:7px 10px; text-align:left; border-bottom:1px solid var(--border); }
-  th { color:var(--muted); font-weight:600; }
-  tbody tr:hover { background:#1c2129; }
-  #logWrap { max-height:320px; overflow-y:auto; }
-  /* 리포트 */
-  #reportSummary { line-height:1.7; font-size:14px; background:#1c2129; border-left:3px solid var(--accent); padding:12px 14px; border-radius:0 6px 6px 0; }
-  .kpis { display:flex; gap:12px; margin-bottom:12px; }
-  .kpi { flex:1; text-align:center; border:1px solid var(--border); border-radius:8px; padding:12px; }
-  .kpi .num { font-size:26px; font-weight:700; }
-  .kpi .lbl { font-size:12px; color:var(--muted); }
-  canvas { max-height:220px; }
-  .toolbar { display:flex; gap:8px; margin-bottom:10px; }
-  select,button { background:#21262d; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeON 스마트 안전관제 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --safe:#3fb950; --caution:#d29922; --warning:#f0883e; --danger:#f85149; --accent:#58a6ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI','Malgun Gothic',sans-serif; }
+    .app { display:flex; min-height:100vh; }
+    .sidebar { width:220px; flex:none; padding:24px 14px; background:#10151d; border-right:1px solid var(--border); }
+    .brand { margin:0 10px 30px; font-size:24px; font-weight:800; letter-spacing:.4px; }
+    .brand span, h1 span { color:var(--accent); }
+    .menu-button { width:100%; display:flex; gap:10px; align-items:center; margin:0 0 8px; padding:12px; border:1px solid transparent; border-radius:8px; background:transparent; color:var(--muted); font-size:14px; text-align:left; cursor:pointer; }
+    .menu-button:hover, .menu-button.active { color:var(--text); background:#1c2735; border-color:var(--accent); }
+    .content { flex:1; min-width:0; padding:22px; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    h1 { margin:0; font-size:22px; } .conn { font-size:13px; color:var(--muted); } .conn.on::before { content:'● '; color:var(--safe); } .conn.off::before { content:'● '; color:var(--danger); }
+    .page { display:none; } .page.active { display:block; }
+    .page-title { margin:0 0 16px; font-size:18px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
+    .panel h2 { margin:0 0 12px; font-size:15px; color:var(--muted); font-weight:600; }
+    .full { grid-column:1 / -1; }
+    #cards, #envCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+    .card, .envcard { border:1px solid var(--border); border-radius:8px; padding:14px; }
+    .card .pair, .meta, .envcard small { font-size:12px; color:var(--muted); }
+    .card .dist { margin:6px 0; font-size:30px; font-weight:700; }
+    .envcard .vals { margin:6px 0; font-size:22px; font-weight:700; }
+    .badge, .tbadge { display:inline-block; border-radius:20px; font-size:12px; font-weight:700; }
+    .badge { padding:2px 10px; color:#000; } .tbadge { padding:2px 8px; border:1px solid var(--border); color:var(--muted); }
+    .l0 { background:var(--safe); } .l1 { background:var(--caution); } .l2 { background:var(--warning); } .l3 { background:var(--danger); animation:blink .6s infinite; }
+    .card.l3-border, .envcard.alert { border-color:var(--danger); box-shadow:0 0 12px rgba(248,81,73,.35); }
+    .card.l2-border { border-color:var(--warning); } .card.offline { opacity:.45; } .t-fall { border-color:var(--danger); color:var(--danger); } .t-env { border-color:var(--accent); color:var(--accent); }
+    @keyframes blink { 50% { opacity:.4; } }
+    table { width:100%; border-collapse:collapse; font-size:13px; } th, td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); } th { color:var(--muted); } tbody tr:hover { background:#1c2129; } #logWrap { max-height:520px; overflow-y:auto; }
+    .toolbar { display:flex; align-items:center; gap:8px; margin-bottom:10px; } select, button { background:#21262d; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; cursor:pointer; } button.active { border-color:var(--accent); color:var(--accent); }
+    .kpis { display:flex; gap:12px; margin-bottom:12px; } .kpi { flex:1; padding:12px; border:1px solid var(--border); border-radius:8px; text-align:center; } .kpi .num { font-size:26px; font-weight:700; } .kpi .lbl { font-size:12px; color:var(--muted); }
+    #reportSummary { padding:12px 14px; border-left:3px solid var(--accent); border-radius:0 6px 6px 0; background:#1c2129; line-height:1.7; font-size:14px; } canvas { max-height:280px; }
+    #fallBanner { display:none; margin-bottom:16px; padding:12px 16px; border-radius:8px; background:var(--danger); color:#fff; font-weight:700; animation:blink .7s infinite; }
+    @media (max-width:760px) { .app { display:block; } .sidebar { width:auto; display:flex; gap:8px; padding:12px; overflow-x:auto; } .brand { display:none; } .menu-button { width:auto; min-width:max-content; margin:0; } .content { padding:16px; } .grid { grid-template-columns:1fr; } .full { grid-column:auto; } .kpis { flex-wrap:wrap; } .kpi { min-width:42%; } }
+  </style>
 </head>
 <body>
-<header>
-  <h1>🦺 Safe<span>ON</span> 스마트 안전관제 대시보드</h1>
-  <div id="conn" class="conn off">서버 연결 대기중…</div>
-</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Safe<span>ON</span></div>
+      <button class="menu-button active" data-page="live">▦ 실시간 관제</button>
+      <button class="menu-button" data-page="events">⚠ 위험 사건</button>
+      <button class="menu-button" data-page="report">▤ 안전 리포트</button>
+    </aside>
 
-<div class="grid">
-  <div class="panel full">
-    <h2>실시간 관제 현황</h2>
-    <div id="cards"><div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div></div>
+    <main class="content">
+      <header>
+        <h1>Safe<span>ON</span> 안전관제 대시보드</h1>
+        <div id="conn" class="conn off">서버 연결 대기중…</div>
+      </header>
+
+      <section id="live" class="page active">
+        <h2 class="page-title">실시간 관제</h2>
+        <div id="fallBanner">낙상 감지: <span id="fallText"></span></div>
+        <div class="grid">
+          <div class="panel full"><h2>작업자 · 중장비 근접 현황</h2><div id="cards"><div class="meta">태그 데이터 수신 대기중…</div></div></div>
+          <div class="panel full"><h2>중장비 환경 센서</h2><div id="envCards"><div class="meta">환경 데이터 수신 대기중…</div></div></div>
+        </div>
+      </section>
+
+      <section id="events" class="page">
+        <h2 class="page-title">위험 사건</h2>
+        <div class="panel"><div class="toolbar"><select id="fltType"><option value="">전체 유형</option><option value="nearmiss">근접위험</option><option value="fall">낙상</option><option value="env">이상환경</option></select><select id="fltLevel"><option value="">전체 등급</option><option value="2">경고 이상</option><option value="3">위험만</option></select><button onclick="loadEvents()">새로고침</button></div><div id="logWrap"><table><thead><tr><th>시간</th><th>유형</th><th>장비</th><th>작업자</th><th>거리</th><th>등급</th><th>비고</th></tr></thead><tbody id="logBody"></tbody></table></div></div>
+      </section>
+
+      <section id="report" class="page">
+        <h2 class="page-title">안전 리포트</h2>
+        <div class="grid"><div class="panel full"><h2>안전 리포트 <button id="btnDaily" class="active" onclick="setPeriod('daily')">일일</button> <button id="btnWeekly" onclick="setPeriod('weekly')">주간</button></h2><div class="kpis"><div class="kpi"><div class="num" id="kpiTotal">0</div><div class="lbl">총 이벤트</div></div><div class="kpi"><div class="num" id="kpiWarn" style="color:var(--warning)">0</div><div class="lbl">경고</div></div><div class="kpi"><div class="num" id="kpiDanger" style="color:var(--danger)">0</div><div class="lbl">위험</div></div><div class="kpi"><div class="num" id="kpiFall" style="color:var(--danger)">0</div><div class="lbl">낙상</div></div></div><div id="reportSummary">데이터 수집 중…</div></div><div class="panel"><h2 id="chartTitle">시간대별 이벤트</h2><canvas id="mainChart"></canvas></div><div class="panel"><h2>장비별 이벤트 순위</h2><canvas id="equipChart"></canvas></div></div>
+      </section>
+    </main>
   </div>
 
-  <div class="panel">
-    <h2>Near-miss 이벤트 로그</h2>
-    <div class="toolbar">
-      <select id="fltLevel">
-        <option value="">전체 등급</option>
-        <option value="2">경고 이상</option>
-        <option value="3">위험만</option>
-      </select>
-      <button onclick="loadEvents()">새로고침</button>
-    </div>
-    <div id="logWrap">
-      <table>
-        <thead><tr><th>시간</th><th>장비</th><th>작업자</th><th>거리(cm)</th><th>상태</th><th>등급</th></tr></thead>
-        <tbody id="logBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>일일 안전 리포트</h2>
-    <div class="kpis">
-      <div class="kpi"><div class="num" id="kpiTotal">0</div><div class="lbl">총 Near-miss</div></div>
-      <div class="kpi"><div class="num" id="kpiWarn" style="color:var(--warning)">0</div><div class="lbl">경고</div></div>
-      <div class="kpi"><div class="num" id="kpiDanger" style="color:var(--danger)">0</div><div class="lbl">위험</div></div>
-    </div>
-    <div id="reportSummary">데이터 수집 중…</div>
-  </div>
-
-  <div class="panel">
-    <h2>시간대별 이벤트</h2>
-    <canvas id="hourChart"></canvas>
-  </div>
-
-  <div class="panel">
-    <h2>장비별 이벤트 순위</h2>
-    <canvas id="equipChart"></canvas>
-  </div>
-</div>
-
-<script>
-const stateKo = { idle:"정지", forward:"전진", reverse:"후진", working:"작업중" };
-const levelKo = ["안전","주의","경고","위험"];
-const live = {};   // key -> 최신 데이터
-
-// ---------- WebSocket ----------
-let ws, wsTimer;
-function connect() {
-  ws = new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}/ws/live`);
-  ws.onopen = () => { setConn(true); wsTimer = setInterval(()=>ws.send("ping"), 15000); };
-  ws.onclose = () => { setConn(false); clearInterval(wsTimer); setTimeout(connect, 2000); };
-  ws.onmessage = e => {
-    const d = JSON.parse(e.data);
-    if (d.type !== "live") return;
-    live[`${d.equip_id}|${d.worker_id}`] = d;
-    renderCards();
-    if (d.event_recorded) { loadEvents(); loadReport(); }
-  };
-}
-function setConn(on) {
-  const el = document.getElementById("conn");
-  el.className = "conn " + (on?"on":"off");
-  el.textContent = on ? "서버 연결됨" : "연결 끊김 — 재연결 중…";
-}
-
-// ---------- 실시간 카드 ----------
-function renderCards() {
-  const now = Date.now()/1000;
-  const el = document.getElementById("cards");
-  el.innerHTML = Object.values(live).map(d => {
-    const off = now - d.ts > 5;
-    const border = d.risk_level>=3?"l3-border":d.risk_level>=2?"l2-border":"";
-    return `<div class="card ${border} ${off?"offline":""}">
-      <div class="pair">🚜 ${d.equip_id} ↔ 👷 ${d.worker_id} ${off?"(오프라인)":""}</div>
-      <div class="dist">${d.distance_cm}<small style="font-size:14px;color:var(--muted)"> cm</small></div>
-      <span class="badge l${d.risk_level}">${d.risk_label}</span>
-      <div class="meta" style="margin-top:6px">
-        상태: ${stateKo[d.equip_state]||d.equip_state} · 접근속도: ${d.speed_cms} cm/s
-        ${d.battery!=null?` · 🔋${d.battery}%`:""}
-      </div>
-    </div>`;
-  }).join("") || '<div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div>';
-}
-setInterval(renderCards, 2000); // 오프라인 갱신용
-
-// ---------- 이벤트 로그 ----------
-async function loadEvents() {
-  const lv = document.getElementById("fltLevel").value;
-  const res = await fetch(`/api/events?limit=100${lv?`&min_level=${lv}`:""}`);
-  const rows = await res.json();
-  document.getElementById("logBody").innerHTML = rows.map(r => `<tr>
-    <td>${r.ts.replace("T"," ")}</td><td>${r.equip_id}</td><td>${r.worker_id}</td>
-    <td>${r.distance_cm}</td><td>${stateKo[r.equip_state]||r.equip_state}</td>
-    <td><span class="badge l${r.risk_level}">${levelKo[r.risk_level]}</span></td>
-  </tr>`).join("");
-}
-document.getElementById("fltLevel").onchange = loadEvents;
-
-// ---------- 리포트 & 차트 ----------
-let hourChart, equipChart;
-async function loadReport() {
-  const r = await (await fetch("/api/report/daily")).json();
-  document.getElementById("kpiTotal").textContent = r.total;
-  document.getElementById("kpiWarn").textContent = r.by_level["2"]||0;
-  document.getElementById("kpiDanger").textContent = r.by_level["3"]||0;
-  document.getElementById("reportSummary").textContent = r.summary;
-
-  const hours = [...Array(24).keys()].map(h=>String(h).padStart(2,"0"));
-  const hourData = hours.map(h=>r.by_hour[h]||0);
-  if (!hourChart) {
-    hourChart = new Chart(document.getElementById("hourChart"), {
-      type:"bar",
-      data:{ labels:hours.map(h=>h+"시"), datasets:[{ label:"이벤트 수", data:hourData, backgroundColor:"#58a6ff" }]},
-      options:{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:"#8b949e",precision:0},grid:{color:"#21262d"}}, x:{ticks:{color:"#8b949e"},grid:{display:false}} } }
-    });
-  } else { hourChart.data.datasets[0].data = hourData; hourChart.update(); }
-
-  const eqLabels = r.by_equip.map(e=>e.equip_id), eqData = r.by_equip.map(e=>e.c);
-  if (!equipChart) {
-    equipChart = new Chart(document.getElementById("equipChart"), {
-      type:"bar",
-      data:{ labels:eqLabels, datasets:[{ label:"이벤트 수", data:eqData, backgroundColor:"#f0883e" }]},
-      options:{ indexAxis:"y", plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:"#8b949e",precision:0},grid:{color:"#21262d"}}, y:{ticks:{color:"#8b949e"},grid:{display:false}} } }
-    });
-  } else { equipChart.data.labels = eqLabels; equipChart.data.datasets[0].data = eqData; equipChart.update(); }
-}
-
-connect();
-loadEvents();
-loadReport();
-setInterval(loadReport, 10000);
-</script>
+  <script>
+    const stateKo = { idle:'정지', forward:'전진', reverse:'후진', working:'작업중' };
+    const levelKo = ['안전','주의','경고','위험'];
+    const typeKo = { nearmiss:'근접위험', fall:'낙상', env:'이상환경' };
+    const live = {}, env = {}; let period = 'daily', mainChart, equipChart, ws, wsTimer;
+    function showPage(page) { document.querySelectorAll('.menu-button, .page').forEach(el => el.classList.remove('active')); document.querySelector(`[data-page="${page}"]`).classList.add('active'); document.getElementById(page).classList.add('active'); if (page === 'events') loadEvents(); if (page === 'report') { loadReport(); setTimeout(() => { mainChart?.resize(); equipChart?.resize(); }, 0); } }
+    document.querySelectorAll('.menu-button').forEach(button => button.addEventListener('click', () => showPage(button.dataset.page)));
+    function setConn(on) { const el=document.getElementById('conn'); el.className='conn '+(on?'on':'off'); el.textContent=on?'서버 연결됨 (MQTT 수신 중)':'연결 끊김 · 재연결 중…'; }
+    function connect() { ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws/live`); ws.onopen=()=>{setConn(true); wsTimer=setInterval(()=>ws.send('ping'),15000);}; ws.onclose=()=>{setConn(false); clearInterval(wsTimer); setTimeout(connect,2000);}; ws.onmessage=e=>{const d=JSON.parse(e.data); if(d.type==='live'){live[`${d.equip_id}|${d.worker_id}`]=d;renderCards();if(d.event_recorded){loadEvents();loadReport();}}else if(d.type==='env'){env[d.equip_id]=d;renderEnv();loadEvents();loadReport();}else if(d.type==='fall'){showFall(d);loadEvents();loadReport();}else if(d.type==='batch'){loadEvents();loadReport();}}; }
+    function showFall(d) { document.getElementById('fallText').textContent=`${d.worker_id} · ${d.detail||'헬멧 자이로 낙상 감지'} (${new Date().toLocaleTimeString()})`; const b=document.getElementById('fallBanner'); b.style.display='block'; setTimeout(()=>b.style.display='none',15000); }
+    function renderCards() { const now=Date.now()/1000, el=document.getElementById('cards'); el.innerHTML=Object.values(live).map(d=>{const off=now-d.ts>5,border=d.risk_level>=3?'l3-border':d.risk_level>=2?'l2-border':'';return `<div class="card ${border} ${off?'offline':''}"><div class="pair">장비 ${d.equip_id} · 작업자 ${d.worker_id} ${off?'(오프라인)':''}</div><div class="dist">${d.distance_cm}<small class="meta"> cm</small></div><span class="badge l${d.risk_level}">${d.risk_label}</span><div class="meta" style="margin-top:6px">상태: ${stateKo[d.equip_state]||d.equip_state} · 접근속도: ${d.speed_cms} cm/s${d.battery!=null?` · 배터리 ${d.battery}%`:''}</div></div>`;}).join('')||'<div class="meta">태그 데이터 수신 대기중…</div>'; }
+    function renderEnv() { const el=document.getElementById('envCards'); el.innerHTML=Object.values(env).map(d=>`<div class="envcard ${d.alert?'alert':''}"><small>장비 ${d.equip_id}</small><div class="vals">${d.temp_c??'-'}°C · ${d.humidity_pct??'-'}%</div><small style="color:${d.alert?'var(--danger)':'var(--muted)'}">${d.alert||'정상 범위'} · ${String(d.ts).replace('T',' ').slice(5,16)}</small></div>`).join('')||'<div class="meta">환경 데이터 수신 대기중…</div>'; }
+    async function loadEnvInit() { const rows=await (await fetch('/api/env')).json(); rows.forEach(r=>env[r.equip_id]=r); renderEnv(); }
+    async function loadEvents() { const lv=document.getElementById('fltLevel').value,tp=document.getElementById('fltType').value,res=await fetch(`/api/events?limit=100${lv?`&min_level=${lv}`:''}${tp?`&event_type=${tp}`:''}`),rows=await res.json(); document.getElementById('logBody').innerHTML=rows.map(r=>`<tr><td>${r.ts.replace('T',' ')}</td><td><span class="tbadge t-${r.event_type}">${typeKo[r.event_type]||r.event_type}</span></td><td>${r.equip_id??'-'}</td><td>${r.worker_id??'-'}</td><td>${r.distance_cm??'-'}</td><td><span class="badge l${r.risk_level}">${levelKo[r.risk_level]}</span></td><td class="meta">${r.detail||''}</td></tr>`).join(''); }
+    document.getElementById('fltLevel').onchange=loadEvents; document.getElementById('fltType').onchange=loadEvents;
+    function setPeriod(p) { period=p; document.getElementById('btnDaily').className=p==='daily'?'active':''; document.getElementById('btnWeekly').className=p==='weekly'?'active':''; document.getElementById('chartTitle').textContent=p==='daily'?'시간대별 이벤트':'날짜별 이벤트'; if(mainChart){mainChart.destroy();mainChart=null;} loadReport(); }
+    async function loadReport() { const r=await (await fetch(period==='daily'?'/api/report/daily':'/api/report/weekly')).json(); document.getElementById('kpiTotal').textContent=r.total; document.getElementById('kpiWarn').textContent=r.by_level['2']||0; document.getElementById('kpiDanger').textContent=r.by_level['3']||0; document.getElementById('kpiFall').textContent=r.by_type?.fall||0; document.getElementById('reportSummary').textContent=r.summary; let labels,data;if(period==='daily'){const hours=[...Array(24).keys()].map(h=>String(h).padStart(2,'0'));labels=hours.map(h=>h+'시');data=hours.map(h=>r.by_hour[h]||0);}else{labels=(r.days||[]).map(d=>d.slice(5));data=(r.days||[]).map(d=>r.by_day[d]||0);} if(!mainChart){mainChart=new Chart(document.getElementById('mainChart'),{type:'bar',data:{labels,datasets:[{label:'이벤트 수',data,backgroundColor:'#58a6ff'}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#8b949e',precision:0},grid:{color:'#21262d'}},x:{ticks:{color:'#8b949e'},grid:{display:false}}}}});}else{mainChart.data.labels=labels;mainChart.data.datasets[0].data=data;mainChart.update();} const eqLabels=(r.by_equip||[]).map(e=>e.equip_id),eqData=(r.by_equip||[]).map(e=>e.c);if(!equipChart){equipChart=new Chart(document.getElementById('equipChart'),{type:'bar',data:{labels:eqLabels,datasets:[{label:'이벤트 수',data:eqData,backgroundColor:'#f0883e'}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b949e',precision:0},grid:{color:'#21262d'}},y:{ticks:{color:'#8b949e'},grid:{display:false}}}}});}else{equipChart.data.labels=eqLabels;equipChart.data.datasets[0].data=eqData;equipChart.update();} }
+    connect(); loadEvents(); loadReport(); loadEnvInit(); setInterval(renderCards,2000); setInterval(loadReport,10000);
+  </script>
 </body>
 </html>
