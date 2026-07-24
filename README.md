@@ -33,13 +33,19 @@
 ```bash
 pip install -r requirements.txt
 
-# 터미널 1: MQTT 브로커 — mosquitto 권장 (1순위)
-mosquitto -c mosquitto.conf -v
+# 터미널 1: MQTT 브로커 — mosquitto
+& "C:\Program Files\mosquitto\mosquitto.exe" `
+  -c "$PWD\mosquitto.conf" `
+  -v
 # mosquitto가 없으면 (백업, 2순위):
 # python broker.py
 
 # 터미널 2: 관제 서버
-uvicorn main:app --host 0.0.0.0 --port 8000
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+
+dir main.py
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # 터미널 3: ESP32 목업 시뮬레이터
 python simulator.py --env-interval 20 --fall-at 12   # 온습도 20초 가속 + 12초에 낙상
