@@ -200,7 +200,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
           </div>
           <div class="live-checklist-grid">
             <section class="checklist-pane" aria-labelledby="recommendationChecklistTitle">
-              <div class="checklist-pane-title"><div><h3 id="recommendationChecklistTitle">자동 생성 개선권고</h3><div class="subtle">완료한 항목을 체크하면 조치 상태에 반영됩니다.</div></div><span class="badge HIGH">위험성평가 연계</span></div>
+              <div class="checklist-pane-title"><div><h3 id="recommendationChecklistTitle">개선조치 체크리스트</h3><div class="subtle">완료 선택 시 실제 조치상태와 이행률이 자동 갱신됩니다.</div></div><span class="badge HIGH">위험성평가 연계</span></div>
               <div class="checklist-list" id="liveRecommendationChecklist"><div class="empty">최근 위험사건을 확인하는 중…</div></div>
               <div class="checklist-progress">
                 <div class="completion-head"><span>권고 조치 진행률</span><strong id="liveChecklistProgress">0% 완료</strong></div>
@@ -325,12 +325,10 @@ const state={proximity:new Map(),environment:new Map(),incidents:[],incidentRepo
 const riskKo={SAFE:"안전",CAUTION:"주의",DANGER:"위험",OFFLINE:"통신장애"};
 const typeIcon={WORKER:"♟",EQUIPMENT:"▣"};
 const recommendationChecklistTemplates=[
-  {category:"URGENT",title:"근로자 통로와 지게차 운행경로 즉시 분리",due:"즉시"},
-  {category:"URGENT",title:"지게차 제동·조종·경보장치 긴급 점검",due:"24시간"},
-  {category:"PRIORITY",title:"현장 제한속도와 감속구간 재설정",due:"3일"},
-  {category:"PRIORITY",title:"후방 사각지대 보조수단 보강",due:"3일"},
-  {category:"PRIORITY",title:"반복 발생 조합 대상 맞춤 안전교육",due:"7일"},
-  {category:"REGULAR",title:"하역장치·유압장치·바퀴 상태 정기점검",due:"정기"}
+  {actionIndex:0,title:"위험구역 임시 출입통제",detail:"콘·차단봉·바닥표시 설치",due:"즉시"},
+  {actionIndex:1,title:"제동·조종·경보장치 기능 확인",detail:"작업 재개 전 점검표 작성",due:"24시간"},
+  {actionIndex:2,title:"운행경로 및 제한속도 수정",detail:"교차구간·후진구간 포함",due:"3일"},
+  {actionIndex:4,title:"운전자·근로자 재교육",detail:"이수서명 및 사진 증빙",due:"7일"}
 ];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
@@ -509,16 +507,17 @@ function renderActions(){
 }
 function renderLiveChecklist(){
   const bundle=state.recommendation||{incident:null,actions:[],completion_rate:0},actions=bundle.actions||[],hasActions=actions.length>0;
-  const items=hasActions?actions:recommendationChecklistTemplates;
+  const items=recommendationChecklistTemplates.map(template=>({...template,action:actions[template.actionIndex]||null}));
   const event=document.getElementById("liveChecklistEvent");event.textContent=bundle.incident?.event_id||"사건 발생 시 자동 생성";event.className=`badge ${hasActions?"DANGER":"OPEN"}`;
-  const categoryKo={URGENT:"긴급",PRIORITY:"우선",REGULAR:"정기"},statusKo={OPEN:"미조치",IN_PROGRESS:"진행 중",CLOSED:"완료"};
+  const statusKo={OPEN:"미조치",IN_PROGRESS:"진행 중",CLOSED:"완료"};
   const el=document.getElementById("liveRecommendationChecklist");
   el.innerHTML=items.map(x=>{
-    const status=x.status||"OPEN",due=x.due_date||x.due||"--",disabled=hasActions?"":"disabled";
-    return `<label class="checklist-item"><input type="checkbox" data-live-action="${hasActions?esc(x.action_id):""}" ${status==="CLOSED"?"checked":""} ${disabled}><span class="checklist-copy"><strong>${esc(x.title)}</strong><span>${categoryKo[x.category]||x.category} · ${statusKo[status]||status}${hasActions?"":" · 사건 발생 후 상태 연동"}</span></span><span class="checklist-deadline">${esc(due)}</span></label>`;
+    const status=x.action?.status||"OPEN",actionId=x.action?.action_id||"",disabled=actionId?"":"disabled";
+    const detail=actionId?`${x.detail} · ${statusKo[status]||status}`:`${x.detail} · 사건 발생 후 상태 연동`;
+    return `<label class="checklist-item"><input type="checkbox" data-live-action="${esc(actionId)}" ${status==="CLOSED"?"checked":""} ${disabled}><span class="checklist-copy"><strong>${esc(x.title)}</strong><span>${esc(detail)}</span></span><span class="checklist-deadline">${esc(x.due)}</span></label>`;
   }).join("");
-  if(hasActions)el.querySelectorAll("[data-live-action]").forEach(box=>box.onchange=()=>updateAction(box.dataset.liveAction,box.checked?"CLOSED":"OPEN"));
-  const completion=Math.max(0,Math.min(100,Number(bundle.completion_rate||0)));
+  el.querySelectorAll("[data-live-action]:not(:disabled)").forEach(box=>box.onchange=()=>updateAction(box.dataset.liveAction,box.checked?"CLOSED":"OPEN"));
+  const completion=Math.round(items.filter(x=>x.action?.status==="CLOSED").length/items.length*100);
   document.getElementById("liveChecklistProgress").textContent=`${completion}% 완료`;
   document.getElementById("liveChecklistBar").style.width=`${completion}%`;
 }
