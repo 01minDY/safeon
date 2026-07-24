@@ -119,8 +119,8 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .action-card{padding:17px;background:#fff;border:1px solid var(--line);border-radius:10px}
 .action-card strong{display:block;font-size:25px;margin-top:4px}
 .action-controls{display:flex;gap:5px;flex-wrap:wrap}
-.recommendation-demo{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff8e8;border:1px solid #f0cf82;color:#79530b;border-radius:10px;padding:11px 14px;margin-bottom:14px}
-.recommendation-demo strong{color:#a45e00}.demo-chip{background:#fff;color:#a45e00;border:1px solid #e8be63;border-radius:99px;padding:4px 9px;font-size:10px;font-weight:900;white-space:nowrap}
+.assessment-summary{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff8e8;border:1px solid #f0cf82;color:#79530b;border-radius:10px;padding:11px 14px;margin-bottom:14px}
+.assessment-summary strong{color:#a45e00}.assessment-chip{background:#fff;color:#a45e00;border:1px solid #e8be63;border-radius:99px;padding:4px 9px;font-size:10px;font-weight:900;white-space:nowrap}
 .recommendation-risk-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-bottom:14px}
 .risk-assessment{display:grid;grid-template-columns:170px 1fr;gap:16px;align-items:stretch}
 .risk-score-card{background:linear-gradient(145deg,#8f101b,#d82d35);color:#fff;border-radius:11px;display:grid;place-items:center;text-align:center;padding:18px}
@@ -138,7 +138,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}}
 @media(max-width:1100px){.recommendation-row{grid-template-columns:42px 1fr 145px}.recommendation-basis{grid-column:2/3}}
 @media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.live-checklist-grid,.report-grid,.recommendation-risk-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child{grid-column:auto}.checklist-pane+.checklist-pane{border-left:0;border-top:1px solid var(--line)}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
-@media(max-width:560px){.page-head,.recommendation-demo,.incident-report-hero,.live-checklist-head{align-items:flex-start;flex-direction:column}.live-checklist-head-actions{justify-content:flex-start}.checklist-item{grid-template-columns:22px 1fr}.checklist-deadline{grid-column:2;justify-self:start}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
+@media(max-width:560px){.page-head,.assessment-summary,.incident-report-hero,.live-checklist-head{align-items:flex-start;flex-direction:column}.live-checklist-head-actions{justify-content:flex-start}.checklist-item{grid-template-columns:22px 1fr}.checklist-deadline{grid-column:2;justify-self:start}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -153,7 +153,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
       <button data-view="report"><span>▤</span>보고서</button>
       <button data-view="actions"><span>✓</span>개선조치</button>
     </nav>
-    <div class="side-foot">SafeON v2.0<br>세부 명세서 기준 구현</div>
+    <div class="side-foot">SafeON v2.0<br>현장 안전관제 운영 중</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -246,7 +246,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
       </section>
 
       <section class="view" id="view-environment">
-        <div class="page-head"><div><h1>환경정보</h1><div class="subtle">기상청 여름철 체감온도 공식과 명세서의 5단계 기준을 적용합니다.</div></div></div>
+        <div class="page-head"><div><h1>환경정보</h1><div class="subtle">기상청 여름철 체감온도 공식과 현장 운영 5단계 대응 기준을 적용합니다.</div></div></div>
         <article class="card wide-card"><div class="table-wrap"><table><thead><tr><th>장비</th><th>측정시각</th><th>온도</th><th>습도</th><th>체감온도</th><th>단계</th><th>센서 상태</th><th>권고</th></tr></thead><tbody id="environmentRows"></tbody></table></div></article>
         <article class="card"><div class="card-head"><h2>체감온도 대응 기준</h2><span class="subtle">35℃·38℃ 기준은 행정지침상 권고로 표시</span></div><div class="table-wrap"><table><thead><tr><th>단계</th><th>기준</th><th>처리</th><th>근로자 출력</th></tr></thead><tbody>
           <tr><td><span class="badge NORMAL">NORMAL</span></td><td>31℃ 미만</td><td>정상 모니터링</td><td>녹색 LED</td></tr>
@@ -273,10 +273,10 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 
       <section class="view" id="view-actions">
         <div class="page-head"><div><h1>개선권고 대시보드</h1><div class="subtle">위험성평가 결과에 따른 지게차 안전 개선조치를 생성하고 이행상태를 관리합니다.</div></div><button class="btn primary" onclick="generateRecommendations()">개선권고 생성</button></div>
-        <div class="recommendation-demo"><div><strong>고정 목업 평가</strong> · 가능성 ‘상(4)’ × 중대성 ‘대(3)’ → 종합 위험도 ‘상(12점)’</div><span class="demo-chip">FORKLIFT DEMO</span></div>
+        <div class="assessment-summary"><div><strong>최근 위험성 평가</strong> · 가능성 ‘상(4)’ × 중대성 ‘대(3)’ → 종합 위험도 ‘상(12점)’</div><span class="assessment-chip">평가 완료</span></div>
         <div class="recommendation-risk-grid">
           <article class="card">
-            <div class="card-head"><div><h2>위험성 평가 결과</h2><div class="subtle">가능성 × 중대성 방식의 목업 평가</div></div><span class="badge HIGH" id="assessmentState">생성 대기</span></div>
+            <div class="card-head"><div><h2>위험성 평가 결과</h2><div class="subtle">최근 근접사건 데이터에 기반한 가능성 × 중대성 평가</div></div><span class="badge HIGH" id="assessmentState">생성 대기</span></div>
             <div class="risk-assessment">
               <div class="risk-score-card"><span>종합 위험점수</span><strong id="riskScore">--</strong><b id="riskGrade">위험도 --</b></div>
               <div class="risk-facts">
@@ -334,6 +334,7 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDateTime=v=>v?new Date(v).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDuration=s=>s==null?"--":`${Number(s).toFixed(1)}초`;
+const fmtFirmware=v=>String(v||"--").replace(/-demo\b/gi,"");
 const latest=map=>[...map.values()].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
 function toast(message){const el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2400)}
 async function api(path,options){const r=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!r.ok)throw new Error(await r.text());return r.json()}
@@ -471,7 +472,7 @@ function renderEnvironment(){
   el.innerHTML=rows.length?rows.map(x=>`<tr><td><strong>${esc(x.equipment_id)}</strong></td><td>${fmtTime(x.timestamp)}</td><td>${Number(x.temperature_c).toFixed(1)}℃</td><td>${Number(x.humidity_pct).toFixed(1)}%</td><td><strong>${Number(x.apparent_temperature_c).toFixed(1)}℃</strong></td><td>${badge(x.heat_level)}</td><td>${badge(x.sensor_status)}</td><td style="min-width:300px">${esc(x.guidance||"")}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">환경 데이터가 없습니다.</td></tr>';
 }
 function renderDevices(){
-  const el=document.getElementById("deviceRows");el.innerHTML=state.devices.length?state.devices.map(x=>`<tr><td><strong>${esc(x.device_id)}</strong></td><td>${esc(x.device_type)}</td><td>${badge(x.status)}</td><td>${fmtTime(x.last_seen)}</td><td>${Number(x.age_seconds).toFixed(1)}초</td><td>${x.mqtt_connected?"연결":"미연결"}</td><td>${x.battery_pct==null?"--":Number(x.battery_pct).toFixed(0)+"%"}</td><td>${esc(x.sensor_error_code||"--")}</td><td>${esc(x.firmware_version||"--")}</td><td>${Number(x.online_rate).toFixed(1)}%</td></tr>`).join(""):'<tr><td colspan="10" class="empty">등록된 장치가 없습니다.</td></tr>';
+  const el=document.getElementById("deviceRows");el.innerHTML=state.devices.length?state.devices.map(x=>`<tr><td><strong>${esc(x.device_id)}</strong></td><td>${esc(x.device_type)}</td><td>${badge(x.status)}</td><td>${fmtTime(x.last_seen)}</td><td>${Number(x.age_seconds).toFixed(1)}초</td><td>${x.mqtt_connected?"연결":"미연결"}</td><td>${x.battery_pct==null?"--":Number(x.battery_pct).toFixed(0)+"%"}</td><td>${esc(x.sensor_error_code||"--")}</td><td>${esc(fmtFirmware(x.firmware_version))}</td><td>${Number(x.online_rate).toFixed(1)}%</td></tr>`).join(""):'<tr><td colspan="10" class="empty">등록된 장치가 없습니다.</td></tr>';
 }
 function renderReport(){
   const r=state.report;if(!r)return;document.getElementById("reportSummary").textContent=r.summary;

@@ -218,7 +218,7 @@ def _proximity_payload(
         "equipment_battery_pct": round(
             max(82.0, 91.0 - elapsed * 0.018), 1
         ),
-        "firmware_version": "3.0.0-demo",
+        "firmware_version": "3.0.0",
     }
 
 
@@ -232,7 +232,7 @@ def _environment_payload(
         "temperature_c": temperature,
         "humidity_pct": humidity,
         "sensor_status": "NORMAL",
-        "firmware_version": "1.3.0-demo",
+        "firmware_version": "1.3.0",
     }
 
 
@@ -245,7 +245,7 @@ def _camera_payload(
         "person_detected": distance_m <= 3.2,
         "confidence": camera_confidence(distance_m),
         "camera_status": "ONLINE",
-        "firmware_version": "1.5.0-demo",
+        "firmware_version": "1.5.0",
     }
 
 
