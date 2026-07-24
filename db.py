@@ -8,6 +8,7 @@ import time
 from datetime import date, datetime, timedelta
 
 import config
+import recommendation_engine
 
 
 _DB_LOCK = threading.RLock()
@@ -84,6 +85,9 @@ CREATE TABLE IF NOT EXISTS improvement_actions (
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     priority TEXT NOT NULL DEFAULT 'MEDIUM',
+    category TEXT NOT NULL DEFAULT 'MANUAL',
+    legal_basis TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
     assignee TEXT,
     due_date TEXT,
     status TEXT NOT NULL DEFAULT 'OPEN',
@@ -91,7 +95,46 @@ CREATE TABLE IF NOT EXISTS improvement_actions (
     updated_ts TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_actions_status ON improvement_actions(status);
+
+CREATE TABLE IF NOT EXISTS risk_assessments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id TEXT NOT NULL UNIQUE,
+    likelihood_label TEXT NOT NULL,
+    likelihood_score INTEGER NOT NULL,
+    severity_label TEXT NOT NULL,
+    severity_score INTEGER NOT NULL,
+    risk_score INTEGER NOT NULL,
+    risk_grade TEXT NOT NULL,
+    equipment_kind TEXT NOT NULL,
+    risk_type TEXT NOT NULL,
+    due_within_hours INTEGER NOT NULL DEFAULT 24,
+    approved INTEGER NOT NULL DEFAULT 0,
+    approved_ts TEXT,
+    created_ts TEXT NOT NULL,
+    updated_ts TEXT NOT NULL,
+    FOREIGN KEY (event_id) REFERENCES incidents(event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_assessments_created
+ON risk_assessments(created_ts);
 """
+
+
+def _migrate_schema(conn: sqlite3.Connection):
+    """Add recommendation columns when opening a pre-existing database."""
+    columns = {
+        row["name"]
+        for row in conn.execute("PRAGMA table_info(improvement_actions)")
+    }
+    additions = {
+        "category": "TEXT NOT NULL DEFAULT 'MANUAL'",
+        "legal_basis": "TEXT NOT NULL DEFAULT ''",
+        "sort_order": "INTEGER NOT NULL DEFAULT 0",
+    }
+    for name, definition in additions.items():
+        if name not in columns:
+            conn.execute(
+                f"ALTER TABLE improvement_actions ADD COLUMN {name} {definition}"
+            )
 
 
 def get_conn(path: str = config.DB_PATH) -> sqlite3.Connection:
@@ -99,6 +142,7 @@ def get_conn(path: str = config.DB_PATH) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     with _DB_LOCK:
         conn.executescript(_SCHEMA)
+        _migrate_schema(conn)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA busy_timeout=10000")
         conn.execute("PRAGMA foreign_keys=ON")
@@ -141,8 +185,68 @@ def _event_id(conn, timestamp: str) -> str:
     return f"{prefix}{number:04d}"
 
 
-def _action_id(event_id: str) -> str:
-    return "ACT-" + event_id.removeprefix("EVT-")
+def _insert_recommendations(
+    conn,
+    incident: dict,
+    repeated_count: int,
+    timestamp: str,
+):
+    assessment = recommendation_engine.fixed_assessment(
+        incident["event_id"], timestamp
+    )
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO risk_assessments (
+            event_id, likelihood_label, likelihood_score, severity_label,
+            severity_score, risk_score, risk_grade, equipment_kind,
+            risk_type, due_within_hours, created_ts, updated_ts
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            assessment["event_id"],
+            assessment["likelihood_label"],
+            assessment["likelihood_score"],
+            assessment["severity_label"],
+            assessment["severity_score"],
+            assessment["risk_score"],
+            assessment["risk_grade"],
+            assessment["equipment_kind"],
+            assessment["risk_type"],
+            assessment["due_within_hours"],
+            timestamp,
+            timestamp,
+        ),
+    )
+    recommendations = recommendation_engine.build_recommendations(
+        incident["event_id"],
+        incident["equipment_id"],
+        incident["worker_id"],
+        repeated_count,
+        timestamp,
+    )
+    for item in recommendations:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO improvement_actions (
+                action_id, event_id, title, description, priority, category,
+                legal_basis, sort_order, due_date, status, created_ts,
+                updated_ts
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?)
+            """,
+            (
+                item["action_id"],
+                item["event_id"],
+                item["title"],
+                item["description"],
+                item["priority"],
+                item["category"],
+                item["legal_basis"],
+                item["sort_order"],
+                item["due_date"],
+                timestamp,
+                timestamp,
+            ),
+        )
 
 
 def _upsert_device(
@@ -301,29 +405,17 @@ def record_proximity(conn, reading: dict, transport: str = "mqtt") -> dict:
                             timestamp,
                         ),
                     )
-                    conn.execute(
-                        """
-                        INSERT OR IGNORE INTO improvement_actions (
-                            action_id, event_id, title, description, priority,
-                            status, created_ts, updated_ts
-                        ) VALUES (?, ?, ?, ?, 'HIGH', 'OPEN', ?, ?)
-                        """,
-                        (
-                            _action_id(event_id),
-                            event_id,
-                            "충돌 위험구역 및 경보장치 점검",
-                            recommendation,
-                            timestamp,
-                            timestamp,
-                        ),
-                    )
-                    result["transition"] = "STARTED"
-                    result["incident"] = _row(
+                    incident = _row(
                         conn.execute(
                             "SELECT * FROM incidents WHERE event_id=?",
                             (event_id,),
                         ).fetchone()
                     )
+                    _insert_recommendations(
+                        conn, incident, repeated + 1, timestamp
+                    )
+                    result["transition"] = "STARTED"
+                    result["incident"] = incident
                 else:
                     start_epoch = _as_epoch(active["start_ts"])
                     duration = max(0.0, epoch - start_epoch)
@@ -860,6 +952,133 @@ def update_improvement_action(conn, action_id: str, payload: dict) -> dict | Non
                 (action_id,),
             ).fetchone()
         )
+
+
+def get_recommendation_bundle(conn, event_id: str) -> dict | None:
+    """Return an incident, its fixed assessment, and ordered recommendations."""
+    with _DB_LOCK:
+        incident = _row(
+            conn.execute(
+                "SELECT * FROM incidents WHERE event_id=?", (event_id,)
+            ).fetchone()
+        )
+        if incident is None:
+            return None
+        assessment = _row(
+            conn.execute(
+                "SELECT * FROM risk_assessments WHERE event_id=?",
+                (event_id,),
+            ).fetchone()
+        )
+        if assessment is not None:
+            assessment["approved"] = bool(assessment["approved"])
+        actions = [
+            dict(row)
+            for row in conn.execute(
+                """
+                SELECT * FROM improvement_actions
+                WHERE event_id=?
+                  AND category IN ('URGENT', 'PRIORITY', 'REGULAR')
+                ORDER BY
+                    CASE category
+                        WHEN 'URGENT' THEN 1
+                        WHEN 'PRIORITY' THEN 2
+                        WHEN 'REGULAR' THEN 3
+                        ELSE 4
+                    END,
+                    sort_order,
+                    id
+                """,
+                (event_id,),
+            ).fetchall()
+        ]
+        completed = sum(item["status"] == "CLOSED" for item in actions)
+        completion_rate = (
+            round(completed / len(actions) * 100) if actions else 0
+        )
+        return {
+            "assessment": assessment,
+            "incident": incident,
+            "actions": actions,
+            "completion_rate": completion_rate,
+        }
+
+
+def latest_recommendation_bundle(conn) -> dict:
+    """Return the bundle for the most recent incident without mutating data."""
+    with _DB_LOCK:
+        row = conn.execute(
+            "SELECT event_id FROM incidents ORDER BY start_ts DESC, id DESC LIMIT 1"
+        ).fetchone()
+    if row is None:
+        return {
+            "assessment": None,
+            "incident": None,
+            "actions": [],
+            "completion_rate": 0,
+        }
+    return get_recommendation_bundle(conn, row["event_id"])
+
+
+def generate_recommendations(conn, event_id: str) -> dict | None:
+    """Idempotently generate the fixed forklift recommendations for an event."""
+    with _DB_LOCK:
+        incident = _row(
+            conn.execute(
+                "SELECT * FROM incidents WHERE event_id=?", (event_id,)
+            ).fetchone()
+        )
+        if incident is None:
+            return None
+        start = datetime.fromisoformat(
+            incident["start_ts"].replace("Z", "+00:00")
+        )
+        repeated_count = conn.execute(
+            """
+            SELECT COUNT(*) AS c FROM incidents
+            WHERE worker_id=? AND equipment_id=?
+              AND start_ts BETWEEN ? AND ?
+            """,
+            (
+                incident["worker_id"],
+                incident["equipment_id"],
+                (start - timedelta(hours=24)).isoformat(timespec="seconds"),
+                incident["start_ts"],
+            ),
+        ).fetchone()["c"]
+        _insert_recommendations(
+            conn,
+            incident,
+            max(1, repeated_count),
+            incident["start_ts"],
+        )
+        conn.commit()
+    return get_recommendation_bundle(conn, event_id)
+
+
+def approve_recommendations(
+    conn, event_id: str, approved: bool
+) -> dict | None:
+    now = _as_iso()
+    with _DB_LOCK:
+        cursor = conn.execute(
+            """
+            UPDATE risk_assessments
+            SET approved=?, approved_ts=?, updated_ts=?
+            WHERE event_id=?
+            """,
+            (
+                1 if approved else 0,
+                now if approved else None,
+                now,
+                event_id,
+            ),
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return None
+        conn.commit()
+    return get_recommendation_bundle(conn, event_id)
 
 
 def daily_report(conn, date_str=None) -> dict:

@@ -22,6 +22,7 @@ from models import (
     ImprovementActionUpdate,
     IncidentActionUpdate,
     ProximityReading,
+    RecommendationApprovalUpdate,
 )
 from mqtt_ingest import Ingest
 
@@ -308,6 +309,54 @@ def update_action(action_id: str, payload: ImprovementActionUpdate):
         raise HTTPException(status_code=404, detail="개선조치를 찾을 수 없습니다.")
     broadcast_sync({"type": "improvement_action", **item})
     return item
+
+
+@app.get("/api/recommendations/latest")
+def latest_recommendations():
+    return db.latest_recommendation_bundle(conn)
+
+
+@app.get("/api/recommendations/{event_id}")
+def recommendations(event_id: str):
+    bundle = db.get_recommendation_bundle(conn, event_id)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail="사건을 찾을 수 없습니다.")
+    return bundle
+
+
+@app.post("/api/incidents/{event_id}/recommendations")
+def generate_recommendations(event_id: str):
+    bundle = db.generate_recommendations(conn, event_id)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail="사건을 찾을 수 없습니다.")
+    broadcast_sync(
+        {
+            "type": "recommendation",
+            "event_id": event_id,
+            "action_count": len(bundle["actions"]),
+        }
+    )
+    return bundle
+
+
+@app.patch("/api/incidents/{event_id}/recommendations/approval")
+def approve_recommendations(
+    event_id: str, payload: RecommendationApprovalUpdate
+):
+    bundle = db.approve_recommendations(conn, event_id, payload.approved)
+    if bundle is None:
+        raise HTTPException(
+            status_code=404,
+            detail="생성된 개선권고를 찾을 수 없습니다.",
+        )
+    broadcast_sync(
+        {
+            "type": "recommendation",
+            "event_id": event_id,
+            "approved": payload.approved,
+        }
+    )
+    return bundle
 
 
 @app.get("/api/health")

@@ -73,3 +73,7 @@ class ImprovementActionUpdate(StrictModel):
     status: Literal["OPEN", "IN_PROGRESS", "CLOSED"] | None = None
     assignee: str | None = Field(default=None, max_length=80)
     due_date: str | None = Field(default=None, max_length=10)
+
+
+class RecommendationApprovalUpdate(StrictModel):
+    approved: bool

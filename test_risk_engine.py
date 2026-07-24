@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import db
+import recommendation_engine
 import risk_engine
 
 
@@ -63,6 +65,83 @@ class RiskEngineTests(unittest.TestCase):
         self.assertEqual(
             risk_engine.proximity_alert("OFFLINE")["display"], "OFFLINE"
         )
+
+
+class RecommendationEngineTests(unittest.TestCase):
+    def test_mock_assessment_is_fixed_to_high_major_forklift(self):
+        assessment = recommendation_engine.fixed_assessment(
+            "EVT-20260724-0001", "2026-07-24T18:30:00+09:00"
+        )
+        self.assertEqual(assessment["likelihood_label"], "상")
+        self.assertEqual(assessment["likelihood_score"], 4)
+        self.assertEqual(assessment["severity_label"], "대")
+        self.assertEqual(assessment["severity_score"], 3)
+        self.assertEqual(assessment["risk_score"], 12)
+        self.assertEqual(assessment["risk_grade"], "상")
+        self.assertEqual(assessment["equipment_kind"], "지게차")
+        self.assertEqual(assessment["risk_type"], "지게차-근로자 충돌")
+
+    def test_six_recommendations_include_forklift_pair(self):
+        items = recommendation_engine.build_recommendations(
+            "EVT-20260724-0007",
+            "E01",
+            "W03",
+            3,
+            "2026-07-24T18:30:00+09:00",
+        )
+        self.assertEqual(len(items), 6)
+        self.assertEqual(
+            [item["category"] for item in items],
+            [
+                "URGENT",
+                "URGENT",
+                "PRIORITY",
+                "PRIORITY",
+                "PRIORITY",
+                "REGULAR",
+            ],
+        )
+        self.assertIn("지게차 E01", items[4]["description"])
+        self.assertIn("근로자 W03", items[4]["description"])
+        self.assertIn("3회 감지", items[4]["legal_basis"])
+
+
+class SchemaMigrationTests(unittest.TestCase):
+    def test_existing_action_table_gets_recommendation_columns(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "legacy-safeon.db"
+            legacy = sqlite3.connect(path)
+            legacy.execute(
+                """
+                CREATE TABLE improvement_actions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action_id TEXT NOT NULL UNIQUE,
+                    event_id TEXT,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    priority TEXT NOT NULL DEFAULT 'MEDIUM',
+                    assignee TEXT,
+                    due_date TEXT,
+                    status TEXT NOT NULL DEFAULT 'OPEN',
+                    created_ts TEXT NOT NULL,
+                    updated_ts TEXT NOT NULL
+                )
+                """
+            )
+            legacy.commit()
+            legacy.close()
+
+            migrated = db.get_conn(str(path))
+            columns = {
+                row["name"]
+                for row in migrated.execute(
+                    "PRAGMA table_info(improvement_actions)"
+                )
+            }
+            migrated.close()
+            self.assertTrue(
+                {"category", "legal_basis", "sort_order"} <= columns
+            )
 
 
 class IncidentLifecycleTests(unittest.TestCase):
@@ -124,6 +203,20 @@ class IncidentLifecycleTests(unittest.TestCase):
         self.assertEqual(
             db.list_improvement_actions(self.conn)[0]["status"], "CLOSED"
         )
+
+    def test_incident_creates_idempotent_recommendation_bundle(self):
+        event_id = db.record_proximity(
+            self.conn, self.reading(0, 0.8, "DANGER")
+        )["incident"]["event_id"]
+        bundle = db.get_recommendation_bundle(self.conn, event_id)
+        self.assertEqual(bundle["assessment"]["risk_score"], 12)
+        self.assertEqual(bundle["assessment"]["equipment_kind"], "지게차")
+        self.assertEqual(len(bundle["actions"]), 6)
+
+        regenerated = db.generate_recommendations(self.conn, event_id)
+        self.assertEqual(len(regenerated["actions"]), 6)
+        approved = db.approve_recommendations(self.conn, event_id, True)
+        self.assertTrue(approved["assessment"]["approved"])
 
     def test_device_health_degraded_and_offline(self):
         db.record_proximity(self.conn, self.reading(0, 4.0, "SAFE"))
