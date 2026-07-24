@@ -173,6 +173,14 @@ def incidents(
     )
 
 
+@app.get("/api/incidents/{event_id}")
+def incident_report(event_id: str):
+    item = db.get_incident_report(conn, event_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="사건을 찾을 수 없습니다.")
+    return item
+
+
 @app.patch("/api/incidents/{event_id}/action")
 def incident_action(event_id: str, update: IncidentActionUpdate):
     item = db.update_incident_action(conn, event_id, update.action_status)

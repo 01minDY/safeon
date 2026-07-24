@@ -743,6 +743,36 @@ def list_incidents(
         return [dict(r) for r in conn.execute(query, args).fetchall()]
 
 
+def get_incident_report(conn, event_id: str) -> dict | None:
+    """Return one incident with the closest environment reading."""
+    with _DB_LOCK:
+        row = conn.execute(
+            "SELECT * FROM incidents WHERE event_id=?",
+            (event_id,),
+        ).fetchone()
+        if row is None:
+            return None
+
+        incident = dict(row)
+        environment = conn.execute(
+            """
+            SELECT * FROM env_logs
+            WHERE equipment_id=?
+            ORDER BY ABS(
+                julianday(timestamp) - julianday(?)
+            ), id DESC
+            LIMIT 1
+            """,
+            (incident["equipment_id"], incident["start_ts"]),
+        ).fetchone()
+
+        incident["distance_m"] = incident["last_distance_m"]
+        incident["risk_level"] = "DANGER"
+        incident["near_miss"] = bool(incident["near_miss"])
+        incident["environment"] = _row(environment)
+        return incident
+
+
 def update_incident_action(conn, event_id: str, status: str) -> dict | None:
     if status not in config.ACTION_STATES:
         raise ValueError("지원하지 않는 조치상태입니다.")

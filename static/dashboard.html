@@ -66,6 +66,8 @@ h1{font-size:25px;margin:0} h2{font-size:16px;margin:0}
 .incident-item{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px}
 .incident-color{width:8px;height:38px;border-radius:8px;background:var(--red)}
 .incident-title{font-weight:850}.incident-detail{color:var(--muted);font-size:11px;margin-top:2px}
+.incident-link{appearance:none;border:0;background:transparent;color:var(--blue);padding:0;cursor:pointer;font:inherit;font-weight:850;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
+.incident-link:hover,.incident-link:focus-visible{color:var(--navy2);text-decoration-color:currentColor;outline:none}
 .empty{padding:30px 12px;text-align:center;color:var(--muted)}
 .heat-number{font-size:36px;font-weight:900;color:var(--purple)}
 .heat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
@@ -88,6 +90,17 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:12px;border-radius:10px;margin-bottom:14px}
 .toolbar select,.toolbar input{border:1px solid #cbd6e3;border-radius:7px;padding:8px;background:#fff}
 .wide-card{margin-bottom:14px}
+.incident-report-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;background:linear-gradient(135deg,#102f52,#071b32);color:#fff;border-radius:12px;padding:22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.incident-report-hero h2{font-size:24px;margin:8px 0 5px}.incident-report-hero .subtle{color:#bfd0e1}
+.incident-report-stage{text-align:right}.incident-report-stage strong{display:block;font-size:30px;margin-bottom:5px}
+.incident-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.detail-card{padding:18px}.detail-card h2{margin-bottom:14px}
+.detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.detail-item{background:#f5f8fc;border:1px solid #e7edf4;border-radius:9px;padding:12px;min-width:0}
+.detail-item>span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}.detail-item>strong{display:block;font-size:17px;overflow-wrap:anywhere}
+.detail-item.emphasis{background:#fff0f0;border-color:#f4c4c4}.detail-item.emphasis strong{color:#bd2828;font-size:24px}
+.detail-note{margin-top:12px;padding:11px 12px;background:#f3f7fd;border-left:3px solid var(--blue);border-radius:6px;color:#455a73;font-size:12px;line-height:1.65}
+.report-action-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
 .report-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
 .summary{background:#f3f7fd;border-left:4px solid var(--blue);padding:15px;border-radius:6px;line-height:1.7}
 .action-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
@@ -112,8 +125,8 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .toast.show{transform:none;opacity:1}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}.grid-bottom>.card:first-child{grid-column:1/-1}}
 @media(max-width:1100px){.recommendation-row{grid-template-columns:42px 1fr 145px}.recommendation-basis{grid-column:2/3}}
-@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.report-grid,.recommendation-risk-grid{grid-template-columns:1fr}.grid-live>.card:last-child,.grid-bottom>.card:first-child{grid-column:auto}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
-@media(max-width:560px){.page-head,.recommendation-demo{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
+@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.report-grid,.recommendation-risk-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child,.grid-bottom>.card:first-child{grid-column:auto}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
+@media(max-width:560px){.page-head,.recommendation-demo,.incident-report-hero{align-items:flex-start;flex-direction:column}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -175,6 +188,14 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
         <div class="page-head"><div><h1>위험사건</h1><div class="subtle">DANGER 진입부터 해제까지 하나의 사건으로 관리합니다.</div></div></div>
         <div class="toolbar"><select id="incidentStatus" onchange="renderIncidents()"><option value="">전체 조치상태</option><option>OPEN</option><option>ACK</option><option>CLOSED</option></select><span class="subtle">사건을 확인하면 ACK, 조치가 끝나면 CLOSED로 변경하세요.</span></div>
         <article class="card"><div class="table-wrap"><table><thead><tr><th>사건 ID</th><th>시작/종료</th><th>근로자</th><th>중장비</th><th>최소거리</th><th>노출시간</th><th>온라인율</th><th>개선 권고</th><th>조치</th></tr></thead><tbody id="incidentRows"></tbody></table></div></article>
+      </section>
+
+      <section class="view" id="view-incident-detail">
+        <div class="page-head">
+          <div><h1>개별사건 리포트</h1><div class="subtle">사건 시점의 위험 정보와 환경 측정값을 확인합니다.</div></div>
+          <button class="btn" type="button" onclick="showView('incidents')">← 사건 목록</button>
+        </div>
+        <div id="incidentReportContent"><article class="card"><div class="empty">사건 ID를 선택해 주세요.</div></article></div>
       </section>
 
       <section class="view" id="view-environment">
@@ -253,28 +274,102 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const state={proximity:new Map(),environment:new Map(),cameras:new Map(),incidents:[],devices:[],actions:[],report:null,recommendation:null,recommendationFilter:"ALL",distanceHistory:[]};
+const state={proximity:new Map(),environment:new Map(),cameras:new Map(),incidents:[],incidentReport:null,devices:[],actions:[],report:null,recommendation:null,recommendationFilter:"ALL",distanceHistory:[]};
 const riskKo={SAFE:"안전",CAUTION:"주의",DANGER:"위험",OFFLINE:"통신장애"};
 const typeIcon={WORKER:"♟",EQUIPMENT:"▣",CAMERA:"◉"};
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
+const fmtDateTime=v=>v?new Date(v).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDuration=s=>s==null?"--":`${Number(s).toFixed(1)}초`;
 const latest=map=>[...map.values()].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
 function toast(message){const el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2400)}
 async function api(path,options){const r=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!r.ok)throw new Error(await r.text());return r.json()}
-function showView(name){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(`view-${name}`).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===name));if(name==="report")setTimeout(drawReportChart,40)}
+function showView(name){const view=document.getElementById(`view-${name}`);if(!view)return;if(name!=="incident-detail")state.incidentReport=null;document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));view.classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===name));if(name==="report")setTimeout(drawReportChart,40);window.scrollTo({top:0,behavior:"smooth"})}
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
 document.querySelectorAll("[data-rec-filter]").forEach(b=>b.onclick=()=>setRecommendationFilter(b.dataset.recFilter));
 function badge(value){return `<span class="badge ${esc(value)}">${esc(value)}</span>`}
+function incidentLink(eventId){return `<button class="incident-link" type="button" data-report-id="${esc(eventId)}" aria-label="${esc(eventId)} 개별사건 리포트 열기">${esc(eventId)}</button>`}
+function bindIncidentLinks(root){root.querySelectorAll("[data-report-id]").forEach(b=>b.onclick=()=>openIncidentReport(b.dataset.reportId))}
+
+async function openIncidentReport(eventId){
+  showView("incident-detail");
+  document.getElementById("incidentReportContent").innerHTML='<article class="card"><div class="empty">개별사건 리포트를 불러오는 중…</div></article>';
+  try{
+    state.incidentReport=await api(`/api/incidents/${encodeURIComponent(eventId)}`);
+    renderIncidentReport();
+  }catch(e){
+    state.incidentReport=null;
+    document.getElementById("incidentReportContent").innerHTML='<article class="card"><div class="empty">사건 리포트를 불러오지 못했습니다. 사건 목록에서 다시 선택해 주세요.</div></article>';
+    toast("사건 리포트를 불러오지 못했습니다.");
+  }
+}
+
+function renderIncidentReport(){
+  const x=state.incidentReport,el=document.getElementById("incidentReportContent");if(!x||!el)return;
+  const env=x.environment;
+  const distance=x.distance_m==null?"--":`${Number(x.distance_m).toFixed(2)}m`;
+  const minimum=x.min_distance_m==null?"--":`${Number(x.min_distance_m).toFixed(2)}m`;
+  const temperature=env?.temperature_c==null?"--":`${Number(env.temperature_c).toFixed(1)}℃`;
+  const humidity=env?.humidity_pct==null?"--":`${Number(env.humidity_pct).toFixed(1)}%`;
+  const apparent=env?.apparent_temperature_c==null?"--":`${Number(env.apparent_temperature_c).toFixed(1)}℃`;
+  const actionButtons=`${x.action_status==="OPEN"?`<button class="btn good" type="button" data-report-action="ACK">확인 처리</button>`:""}${x.action_status!=="CLOSED"?`<button class="btn" type="button" data-report-action="CLOSED">조치 완료</button>`:""}`;
+  el.innerHTML=`
+    <article class="incident-report-hero">
+      <div><span class="badge OPEN">INCIDENT REPORT</span><h2>${esc(x.event_id)}</h2><div class="subtle">근로자 ${esc(x.worker_id)} ↔ 중장비 ${esc(x.equipment_id)}</div></div>
+      <div class="incident-report-stage"><strong>${esc(riskKo[x.risk_level]||x.risk_level)}</strong>${badge(x.risk_level)}<div class="subtle">사건 위험 단계</div></div>
+    </article>
+    <div class="incident-report-grid">
+      <article class="card detail-card">
+        <h2>사건 시간</h2>
+        <div class="detail-list">
+          <div class="detail-item"><span>시작시간</span><strong>${fmtDateTime(x.start_ts)}</strong></div>
+          <div class="detail-item"><span>종료시간</span><strong>${x.end_ts?fmtDateTime(x.end_ts):"진행 중"}</strong></div>
+          <div class="detail-item"><span>위험 노출시간</span><strong>${fmtDuration(x.exposure_seconds)}</strong></div>
+          <div class="detail-item"><span>데이터 온라인율</span><strong>${Number(x.online_rate).toFixed(1)}%</strong></div>
+        </div>
+      </article>
+      <article class="card detail-card">
+        <h2>접근 거리</h2>
+        <div class="detail-list">
+          <div class="detail-item"><span>마지막 감지 거리</span><strong>${distance}</strong></div>
+          <div class="detail-item emphasis"><span>최소 접근 거리</span><strong>${minimum}</strong></div>
+          <div class="detail-item"><span>위험 단계</span><strong>${badge(x.risk_level)}</strong></div>
+          <div class="detail-item"><span>아차사고</span><strong>${x.near_miss?"YES":"NO"}</strong></div>
+        </div>
+      </article>
+      <article class="card detail-card">
+        <h2>사건 시점 온습도</h2>
+        <div class="detail-list">
+          <div class="detail-item"><span>온도</span><strong>${temperature}</strong></div>
+          <div class="detail-item"><span>습도</span><strong>${humidity}</strong></div>
+          <div class="detail-item"><span>체감온도</span><strong>${apparent}</strong></div>
+          <div class="detail-item"><span>온열 단계</span><strong>${env?badge(env.heat_level):"--"}</strong></div>
+        </div>
+        <div class="detail-note">${env?`중장비 ${esc(x.equipment_id)}의 ${fmtDateTime(env.timestamp)} 측정값입니다.`:"해당 중장비의 온습도 측정값이 없습니다."}</div>
+      </article>
+      <article class="card detail-card">
+        <h2>조치 상태</h2>
+        <div class="detail-list">
+          <div class="detail-item"><span>현재 조치 상태</span><strong>${badge(x.action_status)}</strong></div>
+          <div class="detail-item"><span>사건 ID</span><strong>${esc(x.event_id)}</strong></div>
+        </div>
+        <div class="detail-note">${esc(x.recommendation||"등록된 개선 권고가 없습니다.")}</div>
+        <div class="report-action-row">${actionButtons}</div>
+      </article>
+    </div>`;
+  el.querySelectorAll("[data-report-action]").forEach(b=>b.onclick=()=>updateIncident(x.event_id,b.dataset.reportAction));
+}
 
 async function refreshAll(){
   try{
-    const [live,incidents,devices,report,actions,recommendation]=await Promise.all([api("/api/live"),api("/api/incidents?limit=200"),api("/api/devices"),api("/api/report/weekly"),api("/api/actions"),api("/api/recommendations/latest")]);
+    const selectedEventId=state.incidentReport?.event_id;
+    const [live,incidents,devices,report,actions,recommendation,incidentReport]=await Promise.all([api("/api/live"),api("/api/incidents?limit=200"),api("/api/devices"),api("/api/report/weekly"),api("/api/actions"),api("/api/recommendations/latest"),selectedEventId?api(`/api/incidents/${encodeURIComponent(selectedEventId)}`):Promise.resolve(null)]);
     live.proximity.forEach(x=>state.proximity.set(`${x.equipment_id}:${x.worker_id}`,x));
     live.environment.forEach(x=>state.environment.set(x.equipment_id,x));
     live.cameras.forEach(x=>state.cameras.set(x.equipment_id,x));
-    state.incidents=incidents;state.devices=devices;state.report=report;state.actions=actions;state.recommendation=recommendation;
+    state.incidents=incidents;state.devices=devices;state.report=report;state.actions=actions;state.recommendation=recommendation;if(incidentReport)state.incidentReport=incidentReport;
     renderAll();
+    if(incidentReport)renderIncidentReport();
   }catch(e){toast("데이터를 불러오지 못했습니다.");console.error(e)}
 }
 function renderAll(){renderLive();renderIncidents();renderEnvironment();renderDevices();renderReport();renderActions()}
@@ -299,7 +394,8 @@ function renderLiveStage(p){
 }
 function renderRecent(){
   const items=state.incidents.slice(0,5),el=document.getElementById("recentIncidents");if(!items.length){el.innerHTML='<div class="empty">기록된 사건이 없습니다.</div>';return}
-  el.innerHTML=items.map(x=>`<div class="incident-item"><i class="incident-color"></i><div><div class="incident-title">${esc(x.event_id)} · ${Number(x.min_distance_m).toFixed(2)}m</div><div class="incident-detail">${esc(x.worker_id)} ↔ ${esc(x.equipment_id)} · ${fmtTime(x.start_ts)} · ${fmtDuration(x.exposure_seconds)}</div></div>${badge(x.action_status)}</div>`).join("");
+  el.innerHTML=items.map(x=>`<div class="incident-item"><i class="incident-color"></i><div><div class="incident-title">${incidentLink(x.event_id)} · ${Number(x.min_distance_m).toFixed(2)}m</div><div class="incident-detail">${esc(x.worker_id)} ↔ ${esc(x.equipment_id)} · ${fmtTime(x.start_ts)} · ${fmtDuration(x.exposure_seconds)}</div></div>${badge(x.action_status)}</div>`).join("");
+  bindIncidentLinks(el);
 }
 function renderHeat(env){
   const el=document.getElementById("heatPanel");if(!env){el.innerHTML='<div class="empty">온습도 데이터 수신 대기 중…</div>';return}
@@ -318,10 +414,11 @@ function renderCamera(cam){
 }
 function renderIncidents(){
   const filter=document.getElementById("incidentStatus")?.value||"",items=state.incidents.filter(x=>!filter||x.action_status===filter),el=document.getElementById("incidentRows");
-  el.innerHTML=items.length?items.map(x=>`<tr><td><strong>${esc(x.event_id)}</strong>${x.end_ts?"":"<br>"+badge("DANGER")}</td><td>${fmtTime(x.start_ts)}<br><span class="subtle">${x.end_ts?fmtTime(x.end_ts):"진행 중"}</span></td><td>${esc(x.worker_id)}</td><td>${esc(x.equipment_id)}</td><td><strong>${Number(x.min_distance_m).toFixed(2)}m</strong></td><td>${fmtDuration(x.exposure_seconds)}</td><td>${Number(x.online_rate).toFixed(1)}%</td><td style="min-width:260px">${esc(x.recommendation)}</td><td><div class="action-controls">${badge(x.action_status)}${x.action_status==="OPEN"?`<button class="btn good" data-incident="${esc(x.event_id)}" data-next="ACK">확인</button>`:""}${x.action_status!=="CLOSED"?`<button class="btn" data-incident="${esc(x.event_id)}" data-next="CLOSED">완료</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="9" class="empty">조건에 맞는 사건이 없습니다.</td></tr>';
+  el.innerHTML=items.length?items.map(x=>`<tr><td>${incidentLink(x.event_id)}${x.end_ts?"":"<br>"+badge("DANGER")}</td><td>${fmtTime(x.start_ts)}<br><span class="subtle">${x.end_ts?fmtTime(x.end_ts):"진행 중"}</span></td><td>${esc(x.worker_id)}</td><td>${esc(x.equipment_id)}</td><td><strong>${Number(x.min_distance_m).toFixed(2)}m</strong></td><td>${fmtDuration(x.exposure_seconds)}</td><td>${Number(x.online_rate).toFixed(1)}%</td><td style="min-width:260px">${esc(x.recommendation)}</td><td><div class="action-controls">${badge(x.action_status)}${x.action_status==="OPEN"?`<button class="btn good" data-incident="${esc(x.event_id)}" data-next="ACK">확인</button>`:""}${x.action_status!=="CLOSED"?`<button class="btn" data-incident="${esc(x.event_id)}" data-next="CLOSED">완료</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="9" class="empty">조건에 맞는 사건이 없습니다.</td></tr>';
+  bindIncidentLinks(el);
   el.querySelectorAll("[data-incident]").forEach(b=>b.onclick=()=>updateIncident(b.dataset.incident,b.dataset.next));
 }
-async function updateIncident(id,status){try{await api(`/api/incidents/${encodeURIComponent(id)}/action`,{method:"PATCH",body:JSON.stringify({action_status:status})});toast(`${id} 조치상태가 ${status}로 변경됐습니다.`);await loadIncidentsAndActions()}catch(e){toast("조치상태 변경에 실패했습니다.")}}
+async function updateIncident(id,status){try{const updated=await api(`/api/incidents/${encodeURIComponent(id)}/action`,{method:"PATCH",body:JSON.stringify({action_status:status})});if(state.incidentReport?.event_id===id){state.incidentReport={...state.incidentReport,...updated};renderIncidentReport()}toast(`${id} 조치상태가 ${status}로 변경됐습니다.`);await loadIncidentsAndActions()}catch(e){toast("조치상태 변경에 실패했습니다.")}}
 function renderEnvironment(){
   const rows=[...state.environment.values()].sort((a,b)=>String(a.equipment_id).localeCompare(String(b.equipment_id))),el=document.getElementById("environmentRows");
   el.innerHTML=rows.length?rows.map(x=>`<tr><td><strong>${esc(x.equipment_id)}</strong></td><td>${fmtTime(x.timestamp)}</td><td>${Number(x.temperature_c).toFixed(1)}℃</td><td>${Number(x.humidity_pct).toFixed(1)}%</td><td><strong>${Number(x.apparent_temperature_c).toFixed(1)}℃</strong></td><td>${badge(x.heat_level)}</td><td>${badge(x.sensor_status)}</td><td style="min-width:300px">${esc(x.guidance||"")}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">환경 데이터가 없습니다.</td></tr>';
@@ -333,7 +430,8 @@ function renderReport(){
   const r=state.report;if(!r)return;document.getElementById("reportSummary").textContent=r.summary;
   const items=[["위험 접근 건수",`${r.total_incidents}건`,"⚠"],["총 위험 노출",`${Number(r.total_exposure_seconds).toFixed(1)}초`,"◷"],["최소 접근거리",r.minimum_distance_m==null?"--":`${Number(r.minimum_distance_m).toFixed(2)}m`,"↔"],["조치 완료율",`${Number(r.action_close_rate).toFixed(1)}%`,"✓"],["장치 온라인율",`${Number(r.device_online_rate).toFixed(1)}%`,"⌁"],["최고 체감온도",r.max_apparent_temperature_c==null?"--":`${Number(r.max_apparent_temperature_c).toFixed(1)}℃`,"℃"]];
   document.getElementById("reportKpis").innerHTML=items.map(x=>`<div class="kpi"><div class="kpi-icon">${x[2]}</div><div><div class="kpi-label">${x[0]}</div><div class="kpi-value">${x[1]}</div></div></div>`).join("");
-  document.getElementById("reportRows").innerHTML=r.incidents.length?r.incidents.slice(0,10).map(x=>`<tr><td>${esc(x.event_id)}</td><td>${fmtTime(x.start_ts)}</td><td>${esc(x.equipment_id)} / ${esc(x.worker_id)}</td><td>${Number(x.min_distance_m).toFixed(2)}m</td><td>${fmtDuration(x.exposure_seconds)}</td><td>${badge(x.action_status)}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">주간 사건이 없습니다.</td></tr>';
+  const reportRows=document.getElementById("reportRows");reportRows.innerHTML=r.incidents.length?r.incidents.slice(0,10).map(x=>`<tr><td>${incidentLink(x.event_id)}</td><td>${fmtTime(x.start_ts)}</td><td>${esc(x.equipment_id)} / ${esc(x.worker_id)}</td><td>${Number(x.min_distance_m).toFixed(2)}m</td><td>${fmtDuration(x.exposure_seconds)}</td><td>${badge(x.action_status)}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">주간 사건이 없습니다.</td></tr>';
+  bindIncidentLinks(reportRows);
   drawReportChart();
 }
 function renderActions(){
@@ -363,7 +461,7 @@ async function updateAction(id,status){try{await api(`/api/actions/${encodeURICo
 function setRecommendationFilter(filter){state.recommendationFilter=filter;renderActions()}
 async function generateRecommendations(){const eventId=state.recommendation?.incident?.event_id||state.incidents[0]?.event_id;if(!eventId){toast("개선권고를 생성할 위험사건이 없습니다.");return}try{state.recommendation=await api(`/api/incidents/${encodeURIComponent(eventId)}/recommendations`,{method:"POST"});toast(`${eventId} 지게차 개선권고를 생성했습니다.`);await loadIncidentsAndActions()}catch(e){toast("개선권고 생성에 실패했습니다.")}}
 async function approveRecommendations(){const eventId=state.recommendation?.incident?.event_id;if(!eventId)return;try{state.recommendation=await api(`/api/incidents/${encodeURIComponent(eventId)}/recommendations/approval`,{method:"PATCH",body:JSON.stringify({approved:true})});toast(`${eventId} 개선권고를 승인했습니다.`);renderActions()}catch(e){toast("개선권고 승인에 실패했습니다.")}}
-async function loadIncidentsAndActions(){const [incidents,actions,report,recommendation]=await Promise.all([api("/api/incidents?limit=200"),api("/api/actions"),api("/api/report/weekly"),api("/api/recommendations/latest")]);state.incidents=incidents;state.actions=actions;state.report=report;state.recommendation=recommendation;renderIncidents();renderRecent();renderActions();renderReport();renderLive()}
+async function loadIncidentsAndActions(){const selectedEventId=state.incidentReport?.event_id,[incidents,actions,report,recommendation,incidentReport]=await Promise.all([api("/api/incidents?limit=200"),api("/api/actions"),api("/api/report/weekly"),api("/api/recommendations/latest"),selectedEventId?api(`/api/incidents/${encodeURIComponent(selectedEventId)}`):Promise.resolve(null)]);state.incidents=incidents;state.actions=actions;state.report=report;state.recommendation=recommendation;if(incidentReport)state.incidentReport=incidentReport;renderIncidents();renderRecent();renderActions();renderReport();renderLive();if(incidentReport)renderIncidentReport()}
 function prepCanvas(id){const c=document.getElementById(id);if(!c||!c.offsetParent)return null;const ratio=window.devicePixelRatio||1,w=c.clientWidth,h=215;c.width=w*ratio;c.height=h*ratio;const x=c.getContext("2d");x.scale(ratio,ratio);x.clearRect(0,0,w,h);return {c,x,w,h}}
 function drawDistanceChart(){
   const o=prepCanvas("distanceChart");if(!o)return;const {x,w,h}=o,pad=30,data=state.distanceHistory.slice(-60);x.strokeStyle="#dbe3ed";x.lineWidth=1;for(let i=0;i<=4;i++){const y=pad+(h-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(w-pad,y);x.stroke()}

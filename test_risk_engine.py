@@ -204,6 +204,41 @@ class IncidentLifecycleTests(unittest.TestCase):
             db.list_improvement_actions(self.conn)[0]["status"], "CLOSED"
         )
 
+    def test_incident_report_includes_distance_stage_and_environment(self):
+        db.record_environment(
+            self.conn,
+            {
+                "timestamp": (self.start - timedelta(minutes=1)).isoformat(),
+                "equipment_id": "E01",
+                "temperature_c": 31.4,
+                "humidity_pct": 68.0,
+                "apparent_temperature_c": 32.5,
+                "heat_level": "HEAT_CAUTION",
+                "sensor_status": "NORMAL",
+                "guidance": "수분 섭취와 휴식을 확인하세요.",
+            },
+        )
+        event_id = db.record_proximity(
+            self.conn, self.reading(0, 0.82, "DANGER")
+        )["incident"]["event_id"]
+        db.record_proximity(self.conn, self.reading(3, 0.55, "DANGER"))
+
+        report = db.get_incident_report(self.conn, event_id)
+
+        self.assertEqual(report["event_id"], event_id)
+        self.assertEqual(report["risk_level"], "DANGER")
+        self.assertEqual(report["distance_m"], 0.55)
+        self.assertEqual(report["min_distance_m"], 0.55)
+        self.assertEqual(report["action_status"], "OPEN")
+        self.assertEqual(report["environment"]["temperature_c"], 31.4)
+        self.assertEqual(report["environment"]["humidity_pct"], 68.0)
+        self.assertEqual(report["environment"]["heat_level"], "HEAT_CAUTION")
+
+    def test_incident_report_returns_none_for_unknown_id(self):
+        self.assertIsNone(
+            db.get_incident_report(self.conn, "EVT-20990101-9999")
+        )
+
     def test_incident_creates_idempotent_recommendation_bundle(self):
         event_id = db.record_proximity(
             self.conn, self.reading(0, 0.8, "DANGER")
