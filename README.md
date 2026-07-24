@@ -48,6 +48,7 @@ dir main.py
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
 
 # 터미널 3: ESP32 목업 시뮬레이터
+# cd " 파일경로" 
 python simulator.py --env-interval 20 --fall-at 12   # 온습도 20초 가속 + 12초에 낙상
 python simulator.py --noise                          # 현장 무선환경(노이즈·유실·지연) 리허설
 python simulator.py --batch-demo                     # 통신두절→로컬저장→일괄업로드 백업 플랜 시연
