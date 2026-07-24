@@ -119,8 +119,8 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .action-card{padding:17px;background:#fff;border:1px solid var(--line);border-radius:10px}
 .action-card strong{display:block;font-size:25px;margin-top:4px}
 .action-controls{display:flex;gap:5px;flex-wrap:wrap}
-.assessment-summary{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff8e8;border:1px solid #f0cf82;color:#79530b;border-radius:10px;padding:11px 14px;margin-bottom:14px}
-.assessment-summary strong{color:#a45e00}.assessment-chip{background:#fff;color:#a45e00;border:1px solid #e8be63;border-radius:99px;padding:4px 9px;font-size:10px;font-weight:900;white-space:nowrap}
+.recommendation-demo{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff8e8;border:1px solid #f0cf82;color:#79530b;border-radius:10px;padding:11px 14px;margin-bottom:14px}
+.recommendation-demo strong{color:#a45e00}.demo-chip{background:#fff;color:#a45e00;border:1px solid #e8be63;border-radius:99px;padding:4px 9px;font-size:10px;font-weight:900;white-space:nowrap}
 .recommendation-risk-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;margin-bottom:14px}
 .risk-assessment{display:grid;grid-template-columns:170px 1fr;gap:16px;align-items:stretch}
 .risk-score-card{background:linear-gradient(145deg,#8f101b,#d82d35);color:#fff;border-radius:11px;display:grid;place-items:center;text-align:center;padding:18px}
@@ -128,6 +128,10 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .risk-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.risk-fact{background:#f6f8fb;border:1px solid #e6ebf2;border-radius:8px;padding:11px}.risk-fact span{display:block;color:var(--muted);font-size:11px}.risk-fact strong{display:block;margin-top:3px}
 .risk-formula{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff0f0;border:1px solid #f3c2c2;color:#9d1d26;border-radius:8px;padding:10px 12px}
 .risk-matrix{display:grid;grid-template-columns:62px repeat(4,1fr);gap:5px}.matrix-cell{min-height:34px;border-radius:6px;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:850}.matrix-axis{background:#eaf0f7;color:#52647a}.matrix-low{background:#e6f7ed;color:#087d39}.matrix-mid{background:#fff6cf;color:#8b6500}.matrix-high{background:#ffe2c2;color:#b04f00}.matrix-critical{background:#ffd9dc;color:#b4232c}.matrix-selected{outline:3px solid #c6232e;outline-offset:1px;box-shadow:0 0 0 5px rgba(198,35,46,.1)}
+.risk-criteria-card{padding:0;overflow:hidden;margin-bottom:14px}.risk-criteria-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;border-bottom:1px solid var(--line);background:#f8fafc}.risk-criteria-head h2{margin:0 0 4px}.risk-criteria-formula{background:#17283c;color:#fff;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:850;white-space:nowrap}
+.risk-criteria-grid{display:grid;grid-template-columns:1fr 1fr}.risk-criteria-panel{padding:16px 18px 18px;min-width:0}.risk-criteria-panel+.risk-criteria-panel{border-left:1px solid var(--line)}.risk-criteria-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.risk-criteria-title h3{font-size:14px;margin:0}.risk-criteria-title span{color:var(--muted);font-size:10px}
+.criteria-table{table-layout:fixed;border:1px solid var(--line);border-radius:8px;overflow:hidden}.criteria-table th{padding:8px 9px}.criteria-table td{padding:8px 9px;font-size:11px}.criteria-table th:first-child,.criteria-table td:first-child{width:64px;text-align:center;font-weight:900}.criteria-table th:nth-child(2),.criteria-table td:nth-child(2){width:112px}.criteria-table tbody tr.criteria-selected td{background:#fff5c7;color:#7b4d00;font-weight:850}.criteria-table tbody tr.criteria-selected td:first-child{box-shadow:inset 4px 0 #f3a400}
+.risk-criteria-note{padding:11px 18px;background:#f4f7fb;border-top:1px solid var(--line);color:#52647a;font-size:11px;line-height:1.6}
 .recommendation-incident{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-bottom:14px;background:linear-gradient(135deg,#10263e,#0a1727);color:#fff}.incident-brief-meta{display:flex;gap:14px;flex-wrap:wrap;color:#bdcad8;font-size:12px;margin-top:7px}.incident-brief-distance{text-align:right}.incident-brief-distance strong{display:block;font-size:34px}.incident-brief-distance span{font-size:11px;color:#bdcad8}
 .recommendation-card{padding:0;overflow:hidden}.recommendation-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--line)}.recommendation-filters{display:flex;gap:6px;flex-wrap:wrap}.recommendation-filters button{border:1px solid #cad5e3;background:#fff;color:#516176;border-radius:99px;padding:6px 11px;cursor:pointer;font-size:11px;font-weight:850}.recommendation-filters button.active{background:var(--navy2);border-color:var(--navy2);color:#fff}
 .recommendation-list{display:grid}.recommendation-row{display:grid;grid-template-columns:42px minmax(260px,1fr) minmax(210px,.55fr) 150px;gap:13px;align-items:center;padding:14px 16px;border-bottom:1px solid #edf1f6}.recommendation-row:hover{background:#fafcff}.recommendation-number{width:32px;height:32px;border-radius:9px;background:#ffeded;color:#bd2828;display:grid;place-items:center;font-weight:900}.recommendation-number.PRIORITY{background:#fff1df;color:#b65a00}.recommendation-number.REGULAR{background:#eaf3ff;color:#115ec0}.recommendation-copy h3{font-size:14px;margin:0 0 4px}.recommendation-copy p{color:var(--muted);font-size:12px;margin:0}.recommendation-basis{background:#f6f8fb;border-radius:8px;padding:9px;font-size:11px;color:#52647a}.recommendation-basis b{display:block;color:#34465c;margin-bottom:3px}.recommendation-control{display:grid;gap:6px}.recommendation-control select{border:1px solid #cbd6e3;border-radius:7px;padding:7px;background:#fff}.recommendation-control small{color:var(--muted)}
@@ -137,8 +141,8 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 .toast.show{transform:none;opacity:1}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}}
 @media(max-width:1100px){.recommendation-row{grid-template-columns:42px 1fr 145px}.recommendation-basis{grid-column:2/3}}
-@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.live-checklist-grid,.report-grid,.recommendation-risk-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child{grid-column:auto}.checklist-pane+.checklist-pane{border-left:0;border-top:1px solid var(--line)}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
-@media(max-width:560px){.page-head,.assessment-summary,.incident-report-hero,.live-checklist-head{align-items:flex-start;flex-direction:column}.live-checklist-head-actions{justify-content:flex-start}.checklist-item{grid-template-columns:22px 1fr}.checklist-deadline{grid-column:2;justify-self:start}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
+@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.live-checklist-grid,.report-grid,.recommendation-risk-grid,.risk-criteria-grid,.incident-report-grid{grid-template-columns:1fr}.grid-live>.card:last-child{grid-column:auto}.checklist-pane+.checklist-pane,.risk-criteria-panel+.risk-criteria-panel{border-left:0;border-top:1px solid var(--line)}.action-cards{grid-template-columns:repeat(2,1fr)}.recommendation-toolbar{align-items:flex-start;flex-direction:column}.risk-assessment{grid-template-columns:130px 1fr}}
+@media(max-width:560px){.page-head,.recommendation-demo,.incident-report-hero,.live-checklist-head,.risk-criteria-head{align-items:flex-start;flex-direction:column}.risk-criteria-formula{white-space:normal}.live-checklist-head-actions{justify-content:flex-start}.checklist-item{grid-template-columns:22px 1fr}.checklist-deadline{grid-column:2;justify-self:start}.incident-report-stage{text-align:left}.detail-list{grid-template-columns:1fr}.risk-assessment{grid-template-columns:1fr}.risk-score-card{min-height:150px}.risk-facts{grid-template-columns:1fr}.risk-formula{grid-column:auto;align-items:flex-start;flex-direction:column}.risk-matrix{grid-template-columns:52px repeat(4,1fr)}.matrix-cell{font-size:9px}.recommendation-incident{grid-template-columns:1fr}.incident-brief-distance{text-align:left}.recommendation-row{grid-template-columns:34px 1fr}.recommendation-basis,.recommendation-control{grid-column:2}.recommendation-actions{flex-direction:column}.recommendation-actions .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -153,7 +157,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
       <button data-view="report"><span>▤</span>보고서</button>
       <button data-view="actions"><span>✓</span>개선조치</button>
     </nav>
-    <div class="side-foot">SafeON v2.0<br>현장 안전관제 운영 중</div>
+    <div class="side-foot">SafeON v2.0<br>세부 명세서 기준 구현</div>
   </aside>
   <div class="workspace">
     <header class="topbar">
@@ -246,7 +250,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
       </section>
 
       <section class="view" id="view-environment">
-        <div class="page-head"><div><h1>환경정보</h1><div class="subtle">기상청 여름철 체감온도 공식과 현장 운영 5단계 대응 기준을 적용합니다.</div></div></div>
+        <div class="page-head"><div><h1>환경정보</h1><div class="subtle">기상청 여름철 체감온도 공식과 명세서의 5단계 기준을 적용합니다.</div></div></div>
         <article class="card wide-card"><div class="table-wrap"><table><thead><tr><th>장비</th><th>측정시각</th><th>온도</th><th>습도</th><th>체감온도</th><th>단계</th><th>센서 상태</th><th>권고</th></tr></thead><tbody id="environmentRows"></tbody></table></div></article>
         <article class="card"><div class="card-head"><h2>체감온도 대응 기준</h2><span class="subtle">35℃·38℃ 기준은 행정지침상 권고로 표시</span></div><div class="table-wrap"><table><thead><tr><th>단계</th><th>기준</th><th>처리</th><th>근로자 출력</th></tr></thead><tbody>
           <tr><td><span class="badge NORMAL">NORMAL</span></td><td>31℃ 미만</td><td>정상 모니터링</td><td>녹색 LED</td></tr>
@@ -273,10 +277,10 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
 
       <section class="view" id="view-actions">
         <div class="page-head"><div><h1>개선권고 대시보드</h1><div class="subtle">위험성평가 결과에 따른 지게차 안전 개선조치를 생성하고 이행상태를 관리합니다.</div></div><button class="btn primary" onclick="generateRecommendations()">개선권고 생성</button></div>
-        <div class="assessment-summary"><div><strong>최근 위험성 평가</strong> · 가능성 ‘상(4)’ × 중대성 ‘대(3)’ → 종합 위험도 ‘상(12점)’</div><span class="assessment-chip">평가 완료</span></div>
+        <div class="recommendation-demo"><div><strong>고정 목업 평가</strong> · 가능성 ‘상(4)’ × 중대성 ‘대(3)’ → 종합 위험도 ‘상(12점)’</div><span class="demo-chip">FORKLIFT DEMO</span></div>
         <div class="recommendation-risk-grid">
           <article class="card">
-            <div class="card-head"><div><h2>위험성 평가 결과</h2><div class="subtle">최근 근접사건 데이터에 기반한 가능성 × 중대성 평가</div></div><span class="badge HIGH" id="assessmentState">생성 대기</span></div>
+            <div class="card-head"><div><h2>위험성 평가 결과</h2><div class="subtle">가능성 × 중대성 방식의 목업 평가</div></div><span class="badge HIGH" id="assessmentState">생성 대기</span></div>
             <div class="risk-assessment">
               <div class="risk-score-card"><span>종합 위험점수</span><strong id="riskScore">--</strong><b id="riskGrade">위험도 --</b></div>
               <div class="risk-facts">
@@ -284,7 +288,7 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
                 <div class="risk-fact"><span>중대성(강도)</span><strong id="severityValue">대 · 3점</strong></div>
                 <div class="risk-fact"><span>위험유형</span><strong id="riskType">지게차-근로자 충돌</strong></div>
                 <div class="risk-fact"><span>조치기한</span><strong id="dueWithin">24시간 이내</strong></div>
-                <div class="risk-formula"><span id="riskFormula">위험성 = 가능성 4 × 중대성 3</span><strong>12점 · 상</strong></div>
+                <div class="risk-formula"><span id="riskFormula">위험성 = 가능성 4 × 중대성 3</span><strong id="riskFormulaResult">12점 · 상</strong></div>
               </div>
             </div>
           </article>
@@ -300,6 +304,44 @@ tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
             </div>
           </article>
         </div>
+        <article class="card risk-criteria-card" aria-labelledby="riskCriteriaTitle">
+          <div class="risk-criteria-head">
+            <div><h2 id="riskCriteriaTitle">위험성 평가 판정 기준</h2><div class="subtle">명세서의 가능성(빈도)·중대성(강도) 단계별 정의를 적용합니다.</div></div>
+            <div class="risk-criteria-formula" id="criteriaSelection">위험성 = 가능성 4 × 중대성 3 = 12점</div>
+          </div>
+          <div class="risk-criteria-grid">
+            <section class="risk-criteria-panel" aria-labelledby="likelihoodCriteriaTitle">
+              <div class="risk-criteria-title"><h3 id="likelihoodCriteriaTitle">가능성(빈도) 기준</h3><span>5단계 · 1~5점</span></div>
+              <div class="table-wrap">
+                <table class="criteria-table">
+                  <thead><tr><th>구분</th><th>가능성</th><th>내용(예시)</th></tr></thead>
+                  <tbody>
+                    <tr data-likelihood-score="5"><td>최상</td><td>매우 높음 · 5점</td><td>피해발생 가능성 매우 높음</td></tr>
+                    <tr data-likelihood-score="4"><td>상</td><td>높음 · 4점</td><td>피해발생 가능성 높음</td></tr>
+                    <tr data-likelihood-score="3"><td>중</td><td>보통 · 3점</td><td>부주의 시 발생 가능성 높음</td></tr>
+                    <tr data-likelihood-score="2"><td>하</td><td>낮음 · 2점</td><td>피해발생 가능성 낮음</td></tr>
+                    <tr data-likelihood-score="1"><td>최하</td><td>매우 낮음 · 1점</td><td>피해발생 가능성 매우 낮음</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section class="risk-criteria-panel" aria-labelledby="severityCriteriaTitle">
+              <div class="risk-criteria-title"><h3 id="severityCriteriaTitle">중대성(강도) 기준</h3><span>4단계 · 1~4점</span></div>
+              <div class="table-wrap">
+                <table class="criteria-table">
+                  <thead><tr><th>구분</th><th>중대성</th><th>내용</th></tr></thead>
+                  <tbody>
+                    <tr data-severity-score="4"><td>최대</td><td>사망 · 4점</td><td>사망 또는 영구적 근로불능</td></tr>
+                    <tr data-severity-score="3"><td>대</td><td>휴업필요 · 3점</td><td>휴업을 수반하는 중대한 부상</td></tr>
+                    <tr data-severity-score="2"><td>중</td><td>휴업불필요 · 2점</td><td>응급조치 이상의 치료가 필요하나 휴업이 불필요한 부상</td></tr>
+                    <tr data-severity-score="1"><td>소</td><td>비치료 · 1점</td><td>처치 이후 바로 원래 작업 수행 가능</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <div class="risk-criteria-note">아차사고를 바탕으로 사업장 위험도를 산정하고, 산정된 위험도에 따라 법규 기반 안전 체크리스트와 개선권고를 생성합니다.</div>
+        </article>
         <article class="card recommendation-incident" id="recommendationIncident">
           <div><span class="badge DANGER">DANGER · 아차사고</span><h2 style="margin-top:9px" id="recEventId">위험사건을 기다리는 중</h2><div class="incident-brief-meta" id="recIncidentMeta">최근 위험사건이 발생하면 권고안을 생성할 수 있습니다.</div></div>
           <div class="incident-brief-distance"><strong id="recDistance">--</strong><span>최소 접근거리</span><div id="recExposure">노출 --</div></div>
@@ -334,7 +376,6 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDateTime=v=>v?new Date(v).toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
 const fmtDuration=s=>s==null?"--":`${Number(s).toFixed(1)}초`;
-const fmtFirmware=v=>String(v||"--").replace(/-demo\b/gi,"");
 const latest=map=>[...map.values()].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
 function toast(message){const el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2400)}
 async function api(path,options){const r=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!r.ok)throw new Error(await r.text());return r.json()}
@@ -472,7 +513,7 @@ function renderEnvironment(){
   el.innerHTML=rows.length?rows.map(x=>`<tr><td><strong>${esc(x.equipment_id)}</strong></td><td>${fmtTime(x.timestamp)}</td><td>${Number(x.temperature_c).toFixed(1)}℃</td><td>${Number(x.humidity_pct).toFixed(1)}%</td><td><strong>${Number(x.apparent_temperature_c).toFixed(1)}℃</strong></td><td>${badge(x.heat_level)}</td><td>${badge(x.sensor_status)}</td><td style="min-width:300px">${esc(x.guidance||"")}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">환경 데이터가 없습니다.</td></tr>';
 }
 function renderDevices(){
-  const el=document.getElementById("deviceRows");el.innerHTML=state.devices.length?state.devices.map(x=>`<tr><td><strong>${esc(x.device_id)}</strong></td><td>${esc(x.device_type)}</td><td>${badge(x.status)}</td><td>${fmtTime(x.last_seen)}</td><td>${Number(x.age_seconds).toFixed(1)}초</td><td>${x.mqtt_connected?"연결":"미연결"}</td><td>${x.battery_pct==null?"--":Number(x.battery_pct).toFixed(0)+"%"}</td><td>${esc(x.sensor_error_code||"--")}</td><td>${esc(fmtFirmware(x.firmware_version))}</td><td>${Number(x.online_rate).toFixed(1)}%</td></tr>`).join(""):'<tr><td colspan="10" class="empty">등록된 장치가 없습니다.</td></tr>';
+  const el=document.getElementById("deviceRows");el.innerHTML=state.devices.length?state.devices.map(x=>`<tr><td><strong>${esc(x.device_id)}</strong></td><td>${esc(x.device_type)}</td><td>${badge(x.status)}</td><td>${fmtTime(x.last_seen)}</td><td>${Number(x.age_seconds).toFixed(1)}초</td><td>${x.mqtt_connected?"연결":"미연결"}</td><td>${x.battery_pct==null?"--":Number(x.battery_pct).toFixed(0)+"%"}</td><td>${esc(x.sensor_error_code||"--")}</td><td>${esc(x.firmware_version||"--")}</td><td>${Number(x.online_rate).toFixed(1)}%</td></tr>`).join(""):'<tr><td colspan="10" class="empty">등록된 장치가 없습니다.</td></tr>';
 }
 function renderReport(){
   const r=state.report;if(!r)return;document.getElementById("reportSummary").textContent=r.summary;
@@ -484,13 +525,18 @@ function renderReport(){
 }
 function renderActions(){
   const bundle=state.recommendation||{assessment:null,incident:null,actions:[],completion_rate:0},assessment=bundle.assessment,incident=bundle.incident,actions=bundle.actions||[];
+  const likelihoodScore=Number(assessment?.likelihood_score??4),severityScore=Number(assessment?.severity_score??3),riskScore=Number(assessment?.risk_score??(likelihoodScore*severityScore)),riskGrade=assessment?.risk_grade||"상";
   document.getElementById("riskScore").textContent=assessment?.risk_score??"--";
   document.getElementById("riskGrade").textContent=`위험도 ${assessment?.risk_grade??"--"}`;
   document.getElementById("likelihoodValue").textContent=assessment?`${assessment.likelihood_label} · ${assessment.likelihood_score}점`:"상 · 4점";
   document.getElementById("severityValue").textContent=assessment?`${assessment.severity_label} · ${assessment.severity_score}점`:"대 · 3점";
   document.getElementById("riskType").textContent=assessment?.risk_type||"지게차-근로자 충돌";
   document.getElementById("dueWithin").textContent=assessment?`${assessment.due_within_hours}시간 이내`:"24시간 이내";
-  document.getElementById("riskFormula").textContent=assessment?`위험성 = 가능성 ${assessment.likelihood_score} × 중대성 ${assessment.severity_score}`:"위험성 = 가능성 4 × 중대성 3";
+  document.getElementById("riskFormula").textContent=`위험성 = 가능성 ${likelihoodScore} × 중대성 ${severityScore}`;
+  document.getElementById("riskFormulaResult").textContent=`${riskScore}점 · ${riskGrade}`;
+  document.getElementById("criteriaSelection").textContent=`위험성 = 가능성 ${likelihoodScore} × 중대성 ${severityScore} = ${riskScore}점`;
+  document.querySelectorAll("[data-likelihood-score]").forEach(row=>row.classList.toggle("criteria-selected",Number(row.dataset.likelihoodScore)===likelihoodScore));
+  document.querySelectorAll("[data-severity-score]").forEach(row=>row.classList.toggle("criteria-selected",Number(row.dataset.severityScore)===severityScore));
   const assessmentState=document.getElementById("assessmentState");assessmentState.textContent=assessment?(assessment.approved?"승인 완료":"자동 산정"):"생성 대기";assessmentState.className=`badge ${assessment?.approved?"CLOSED":"HIGH"}`;
   document.getElementById("recEventId").textContent=incident?.event_id||"위험사건을 기다리는 중";
   document.getElementById("recIncidentMeta").textContent=incident?`지게차 ${incident.equipment_id} ↔ 근로자 ${incident.worker_id} · ${fmtTime(incident.start_ts)}`:"최근 위험사건이 발생하면 권고안을 생성할 수 있습니다.";
