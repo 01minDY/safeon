@@ -1,78 +1,138 @@
-"""엔진 단위 테스트 (명세서 기준): python test_risk_engine.py"""
-import risk_engine as re
-from risk_engine import PairTracker
+"""Specification-focused unit tests. Run with: python test_risk_engine.py"""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import db
+import risk_engine
 
 
-def test_classify_3levels():
-    # 명세서: SAFE >3m / CAUTION 1~3m / DANGER ≤1m
-    assert re.classify(5.0) == "SAFE"
-    assert re.classify(3.01) == "SAFE"
-    assert re.classify(3.0) == "CAUTION"
-    assert re.classify(1.01) == "CAUTION"
-    assert re.classify(1.0) == "DANGER"
-    assert re.classify(0.3) == "DANGER"
+class RiskEngineTests(unittest.TestCase):
+    def test_exact_distance_boundaries(self):
+        self.assertEqual(risk_engine.risk_level_for_distance(3.01), "SAFE")
+        self.assertEqual(risk_engine.risk_level_for_distance(3.0), "CAUTION")
+        self.assertEqual(risk_engine.risk_level_for_distance(1.01), "CAUTION")
+        self.assertEqual(risk_engine.risk_level_for_distance(1.0), "DANGER")
+        self.assertEqual(risk_engine.risk_level_for_distance(0.0), "DANGER")
+        self.assertEqual(risk_engine.risk_level_for_distance(None), "OFFLINE")
+
+    def test_legacy_level_normalization(self):
+        self.assertEqual(risk_engine.normalize_risk_level("safe", 4), "SAFE")
+        self.assertEqual(risk_engine.normalize_risk_level(1, 2), "CAUTION")
+        self.assertEqual(risk_engine.normalize_risk_level(2, 0.8), "DANGER")
+        self.assertEqual(risk_engine.normalize_risk_level(None, 0.8), "DANGER")
+
+    def test_heat_stage_boundaries(self):
+        cases = [
+            (30.9, "NORMAL"),
+            (31.0, "HEAT_CAUTION"),
+            (32.9, "HEAT_CAUTION"),
+            (33.0, "REST_REQUIRED"),
+            (34.9, "REST_REQUIRED"),
+            (35.0, "STOP_RECOMMENDED"),
+            (37.9, "STOP_RECOMMENDED"),
+            (38.0, "EMERGENCY_STOP"),
+        ]
+        for apparent, expected in cases:
+            with self.subTest(apparent=apparent):
+                self.assertEqual(risk_engine.heat_level_for(apparent), expected)
+
+    def test_apparent_temperature_is_deterministic(self):
+        value = risk_engine.apparent_temperature(31.4, 68.0)
+        self.assertAlmostEqual(value, 32.5, places=1)
+
+    def test_guidance_marks_administrative_recommendations(self):
+        self.assertEqual(
+            risk_engine.heat_guidance("STOP_RECOMMENDED")["legal_basis"],
+            "administrative_recommendation",
+        )
+        self.assertEqual(
+            risk_engine.heat_guidance("REST_REQUIRED")["legal_basis"],
+            "legal_standard",
+        )
+
+    def test_worker_output_mapping(self):
+        danger = risk_engine.proximity_alert("DANGER", 0.6)
+        self.assertEqual(danger["led"], "red")
+        self.assertTrue(danger["vibration"])
+        self.assertEqual(danger["display"], "DANGER 0.6m")
+        self.assertEqual(
+            risk_engine.proximity_alert("OFFLINE")["display"], "OFFLINE"
+        )
 
 
-def test_near_miss_rule():
-    # 명세서 권고: DANGER이면 near_miss = true
-    assert re.is_near_miss("DANGER") is True
-    assert re.is_near_miss("CAUTION") is False
-    assert re.is_near_miss("SAFE") is False
+class IncidentLifecycleTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.db_path = Path(self.temp_dir.name) / "test-safeon.db"
+        self.conn = db.get_conn(str(self.db_path))
+        self.start = datetime(2026, 7, 24, 18, 30, tzinfo=timezone(timedelta(hours=9)))
 
+    def tearDown(self):
+        self.conn.close()
+        self.temp_dir.cleanup()
 
-def test_tracker_filter_and_debounce():
-    t = PairTracker()
-    _, lv, ch = t.update(5.0, now=0.0)
-    assert lv == "SAFE" and not ch
-    t.update(0.8, now=1.0)
-    t.update(0.8, now=2.0)
-    _, lv, ch = t.update(0.8, now=3.0)
-    assert lv == "DANGER"          # 필터 수렴 후 위험
-    _, lv2, ch2 = t.update(0.8, now=4.0)
-    assert lv2 == lv and not ch2   # 유지 시 changed=False (디바운스)
+    def reading(self, seconds, distance, level):
+        return {
+            "timestamp": (self.start + timedelta(seconds=seconds)).isoformat(),
+            "worker_id": "W01",
+            "equipment_id": "E01",
+            "distance_m": distance,
+            "risk_level": level,
+            "near_miss": level == "DANGER",
+            "sequence": seconds + 1,
+            "battery_pct": 91,
+        }
 
+    def test_danger_opens_updates_and_ends_one_incident(self):
+        started = db.record_proximity(
+            self.conn, self.reading(0, 0.9, "DANGER")
+        )
+        self.assertEqual(started["transition"], "STARTED")
+        self.assertEqual(started["incident"]["event_id"], "EVT-20260724-0001")
 
-def test_edge_level_priority():
-    t = PairTracker()
-    # 엣지(ESP32) 판정값이 오면 서버 계산보다 우선
-    _, lv, _ = t.update(5.0, edge_level="DANGER", now=0.0)
-    assert lv == "DANGER"
+        updated = db.record_proximity(
+            self.conn, self.reading(4, 0.42, "DANGER")
+        )
+        self.assertEqual(updated["transition"], "UPDATED")
+        self.assertEqual(updated["incident"]["min_distance_m"], 0.42)
 
+        ended = db.record_proximity(
+            self.conn, self.reading(9, 1.4, "CAUTION")
+        )
+        self.assertEqual(ended["transition"], "ENDED")
+        self.assertEqual(ended["incident"]["exposure_seconds"], 9.0)
+        self.assertIsNotNone(ended["incident"]["end_ts"])
+        self.assertEqual(len(db.list_incidents(self.conn)), 1)
 
-def test_outlier_smoothing():
-    t = PairTracker()
-    t.update(4.0, now=0.0)
-    t.update(4.0, now=1.0)
-    filtered, _, _ = t.update(0.4, now=2.0)   # 이상치 1개
-    assert filtered > 1.0                      # 이동평균으로 완화
+    def test_action_status_updates_followup_action(self):
+        item = db.record_proximity(
+            self.conn, self.reading(0, 0.8, "DANGER")
+        )["incident"]
+        acknowledged = db.update_incident_action(
+            self.conn, item["event_id"], "ACK"
+        )
+        self.assertEqual(acknowledged["action_status"], "ACK")
+        actions = db.list_improvement_actions(self.conn)
+        self.assertEqual(actions[0]["status"], "IN_PROGRESS")
 
+        db.update_incident_action(self.conn, item["event_id"], "CLOSED")
+        self.assertEqual(
+            db.list_improvement_actions(self.conn)[0]["status"], "CLOSED"
+        )
 
-def test_apparent_temp_reasonable():
-    # 기상청 여름철 체감온도: 33°C/70% → 대략 35~38°C 범위
-    ac = re.apparent_temp(33.0, 70.0)
-    assert 34.0 < ac < 40.0
-    # 습도 낮으면 체감온도도 낮아짐
-    assert re.apparent_temp(33.0, 30.0) < ac
-
-
-def test_heat_stages():
-    assert re.heat_stage(28.0)[0] == "NORMAL"
-    assert re.heat_stage(31.5)[0] == "HEAT_CAUTION"
-    assert re.heat_stage(33.0)[0] == "REST_REQUIRED"
-    assert re.heat_stage(35.0)[0] == "STOP_RECOMMENDED"
-    assert re.heat_stage(38.0)[0] == "EMERGENCY_STOP"
-
-
-def test_recommend_rules():
-    r = re.recommend(duration_sec=8.0, min_distance_m=0.4, repeat_count=3)
-    assert "초근접" in r and "지속" in r and "반복" in r
-    r2 = re.recommend(duration_sec=1.0, min_distance_m=0.9, repeat_count=1)
-    assert "단발성" in r2
+    def test_device_health_degraded_and_offline(self):
+        db.record_proximity(self.conn, self.reading(0, 4.0, "SAFE"))
+        epoch = self.start.timestamp()
+        changed = db.evaluate_device_health(self.conn, now=epoch + 2.1)
+        self.assertTrue(any(x["status"] == "DEGRADED" for x in changed))
+        changed = db.evaluate_device_health(self.conn, now=epoch + 5.1)
+        self.assertTrue(any(x["status"] == "OFFLINE" for x in changed))
 
 
 if __name__ == "__main__":
-    fns = [v for k, v in globals().items() if k.startswith("test_")]
-    for fn in fns:
-        fn()
-        print(f"PASS {fn.__name__}")
-    print(f"\n{len(fns)}개 테스트 전부 통과")
+    unittest.main(verbosity=2)

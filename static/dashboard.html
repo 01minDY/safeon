@@ -1,343 +1,307 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeON 안전관제 대시보드</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SafeON 안전관제</title>
 <style>
-  :root {
-    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e;
-    --safe:#3fb950; --caution:#d29922; --danger:#f85149; --offline:#6e7681; --accent:#58a6ff;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:'Segoe UI','Malgun Gothic',sans-serif; padding:20px; }
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  h1 { font-size:22px; } h1 span { color:var(--accent); }
-  .conn { font-size:13px; color:var(--muted); }
-  .conn.on::before { content:"● "; color:var(--safe); }
-  .conn.off::before { content:"● "; color:var(--danger); }
-  #fallBanner { display:none; background:var(--danger); color:#fff; font-weight:700;
-    padding:12px 16px; border-radius:8px; margin-bottom:14px; animation:blink .7s infinite; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
-  .panel h2 { font-size:15px; color:var(--muted); margin-bottom:12px; font-weight:600; }
-  .full { grid-column:1 / -1; }
-  #cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
-  .card { border:1px solid var(--border); border-radius:8px; padding:14px; }
-  .card .pair { font-size:13px; color:var(--muted); }
-  .card .dist { font-size:30px; font-weight:700; margin:6px 0; }
-  .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:700; color:#000; }
-  .lv-SAFE { background:var(--safe); } .lv-CAUTION { background:var(--caution); }
-  .lv-DANGER { background:var(--danger); animation:blink .6s infinite; }
-  .lv-OFFLINE { background:var(--offline); color:#fff; }
-  .card.b-DANGER { border-color:var(--danger); box-shadow:0 0 12px rgba(248,81,73,.4); }
-  .card.b-CAUTION { border-color:var(--caution); }
-  .card.b-OFFLINE { opacity:.5; }
-  @keyframes blink { 50% { opacity:.4; } }
-  .tbadge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; border:1px solid var(--border); color:var(--muted); }
-  .t-fall { border-color:var(--danger); color:var(--danger); }
-  .t-env { border-color:var(--caution); color:var(--caution); }
-  .t-camera { border-color:var(--accent); color:var(--accent); }
-  #envCards, #devCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; }
-  .envcard, .devcard { border:1px solid var(--border); border-radius:8px; padding:12px; font-size:13px; }
-  .envcard.alert { border-color:var(--danger); box-shadow:0 0 10px rgba(248,81,73,.3); }
-  .envcard .vals { font-size:20px; font-weight:700; margin:4px 0; }
-  .heat-NORMAL{color:var(--safe)} .heat-HEAT_CAUTION{color:var(--caution)}
-  .heat-REST_REQUIRED{color:#f0883e} .heat-STOP_RECOMMENDED,.heat-EMERGENCY_STOP{color:var(--danger)}
-  .st-ONLINE{color:var(--safe)} .st-DEGRADED{color:var(--caution)} .st-OFFLINE{color:var(--danger)}
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th,td { padding:6px 8px; text-align:left; border-bottom:1px solid var(--border); }
-  th { color:var(--muted); font-weight:600; }
-  tbody tr:hover { background:#1c2129; }
-  .scroll { max-height:300px; overflow-y:auto; }
-  #reportSummary { line-height:1.7; font-size:14px; background:#1c2129; border-left:3px solid var(--accent); padding:12px 14px; border-radius:0 6px 6px 0; }
-  .kpis { display:flex; gap:12px; margin-bottom:12px; }
-  .kpi { flex:1; text-align:center; border:1px solid var(--border); border-radius:8px; padding:12px; }
-  .kpi .num { font-size:24px; font-weight:700; }
-  .kpi .lbl { font-size:12px; color:var(--muted); }
-  canvas { max-height:200px; }
-  .toolbar { display:flex; gap:8px; margin-bottom:10px; align-items:center; flex-wrap:wrap; }
-  select,button { background:#21262d; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer; }
-  button.active { border-color:var(--accent); color:var(--accent); }
-  button.mini { padding:2px 8px; font-size:11px; }
-  .as-OPEN{color:var(--danger);font-weight:700} .as-ACK{color:var(--caution);font-weight:700} .as-CLOSED{color:var(--muted)}
+:root {
+  --navy:#062b56; --navy2:#0a417e; --blue:#1268e8; --blue2:#eaf3ff;
+  --bg:#f4f7fb; --card:#fff; --line:#dce4ef; --text:#142033;
+  --muted:#66758a; --green:#12a150; --yellow:#eaa400; --orange:#ef7416;
+  --red:#e23434; --purple:#7256d8; --shadow:0 6px 24px rgba(22,45,76,.07);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Pretendard","Noto Sans KR","Malgun Gothic",sans-serif}
+button,input,select{font:inherit}
+.shell{min-height:100vh;display:grid;grid-template-columns:220px 1fr}
+.sidebar{position:fixed;inset:0 auto 0 0;width:220px;padding:24px 14px;background:linear-gradient(180deg,#082f5d,#041d3b);color:#fff;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;padding:0 10px 26px;font-size:23px;font-weight:900;letter-spacing:.5px}
+.brand-mark{display:grid;place-items:center;width:34px;height:38px;border:2px solid #6bb5ff;border-radius:12px 12px 16px 16px;color:#6bb5ff}
+.nav{display:grid;gap:7px}
+.nav button{border:0;background:transparent;color:#cbdcf0;text-align:left;padding:12px 14px;border-radius:9px;cursor:pointer;font-weight:700}
+.nav button:hover,.nav button.active{background:linear-gradient(90deg,#0e6be8,#0a56bd);color:#fff}
+.nav button span{display:inline-grid;width:26px}
+.side-foot{position:absolute;bottom:20px;left:24px;color:#93a9c1;font-size:11px}
+.workspace{grid-column:2;min-width:0}
+.topbar{height:66px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:10}
+.site-name{font-weight:800}
+.top-status{display:flex;align-items:center;gap:22px;color:var(--muted);font-size:13px}
+.system-pill{display:flex;align-items:center;gap:7px;background:#eefaf3;color:#087739;padding:7px 12px;border-radius:99px;font-weight:800}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+main{padding:24px 28px 40px;max-width:1600px;margin:auto}
+.view{display:none}.view.active{display:block}
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:25px;margin:0} h2{font-size:16px;margin:0}
+.subtle{color:var(--muted);font-size:12px}.mono{font-variant-numeric:tabular-nums}
+.btn{border:1px solid #b9c9dc;background:#fff;color:#28425f;border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:700}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.good{background:#effaf3;border-color:#9bd6b2;color:#087b39}
+.btn.danger{background:#fff1f1;border-color:#f2a1a1;color:#c82727}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:12px;margin-bottom:14px}
+.kpi,.card{background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow)}
+.kpi{padding:16px;min-height:104px;display:flex;gap:12px;align-items:center}
+.kpi-icon{width:42px;height:42px;border-radius:13px;background:var(--blue2);color:var(--blue);display:grid;place-items:center;font-size:21px;font-weight:900}
+.kpi-label{color:var(--muted);font-size:12px}.kpi-value{font-size:24px;font-weight:900;margin-top:3px;white-space:nowrap}.kpi-note{font-size:11px;color:var(--muted)}
+.alert-banner{display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff0f0;border:1px solid #f0a0a0;color:#ae1d1d;border-radius:9px;margin-bottom:14px;font-weight:800}
+.alert-banner.show{display:flex}
+.grid-live{display:grid;grid-template-columns:1.35fr 1fr .8fr;gap:14px}
+.card{padding:16px;min-width:0}.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.live-stage{border-radius:9px;padding:18px;background:linear-gradient(135deg,#eef6ff,#f8fbff);min-height:230px}
+.pair-main{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;text-align:center}
+.entity{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 10px}
+.entity-icon{font-size:38px}.entity-name{font-weight:900;margin-top:6px}.distance-line{min-width:145px}
+.distance-value{font-size:34px;font-weight:900;color:var(--blue)}
+.distance-track{height:8px;border-radius:8px;background:linear-gradient(90deg,var(--red) 0 25%,var(--yellow) 25% 75%,var(--green) 75%);margin-top:10px;position:relative}
+.distance-marker{position:absolute;top:-5px;width:17px;height:17px;border:3px solid #fff;background:#152944;border-radius:50%;box-shadow:0 1px 5px #7d8ba0}
+.pair-meta{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.badge{display:inline-flex;align-items:center;border-radius:99px;padding:4px 9px;font-size:11px;font-weight:900}
+.SAFE,.ONLINE,.NORMAL,.CLOSED{background:#e9f8ef;color:#087d39}
+.CAUTION,.DEGRADED,.HEAT_CAUTION,.ACK,.MEDIUM{background:#fff7d8;color:#9b6800}
+.DANGER,.OFFLINE,.ERROR,.EMERGENCY_STOP,.HIGH{background:#ffeded;color:#be2828}
+.REST_REQUIRED,.STOP_RECOMMENDED,.IN_PROGRESS{background:#fff0df;color:#bd5d00}
+.OPEN{background:#eaf3ff;color:#115ec0}
+.incident-list{display:grid;gap:8px;max-height:268px;overflow:auto}
+.incident-item{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px}
+.incident-color{width:8px;height:38px;border-radius:8px;background:var(--red)}
+.incident-title{font-weight:850}.incident-detail{color:var(--muted);font-size:11px;margin-top:2px}
+.empty{padding:30px 12px;text-align:center;color:var(--muted)}
+.heat-number{font-size:36px;font-weight:900;color:var(--purple)}
+.heat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.mini-metric{background:#f5f8fc;border-radius:8px;padding:10px}.mini-metric strong{font-size:18px;display:block}
+.heat-scale{height:9px;border-radius:7px;background:linear-gradient(90deg,#12a150 0 36%,#e6c51c 36% 53%,#f29b17 53% 67%,#ef4a34 67% 83%,#b61630 83%)}
+.heat-marker{height:18px;width:3px;background:#17263a;position:relative;top:-5px;transition:left .3s}
+.guidance{font-size:12px;background:#f5f1ff;color:#52379e;border-radius:8px;padding:10px;margin-top:12px}
+.grid-bottom{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-top:14px}
+canvas{display:block;width:100%;height:215px}
+table{width:100%;border-collapse:collapse}
+th{background:#f5f7fa;color:#506078;font-size:11px;text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid #edf1f6;font-size:12px;vertical-align:middle}
+tbody tr:hover{background:#fafcff}.table-wrap{overflow:auto}
+#incidentRows td:first-child,#actionRows td:first-child,#actionRows td:nth-child(2){white-space:nowrap}
+.device-list{display:grid;gap:8px}.device{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:8px}
+.device-icon{width:32px;height:32px;display:grid;place-items:center;background:#edf4fc;border-radius:9px}
+.camera-view{min-height:155px;border-radius:9px;background:linear-gradient(145deg,#14273d,#09111d);color:#fff;padding:14px;position:relative;overflow:hidden}
+.camera-view:after{content:"";position:absolute;inset:20% 28%;border:2px solid rgba(255,255,255,.5);border-radius:5px}
+.camera-detected{position:absolute;z-index:2;bottom:12px;left:12px;background:#e23636;padding:5px 8px;border-radius:5px;font-size:11px;font-weight:900}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:12px;border-radius:10px;margin-bottom:14px}
+.toolbar select,.toolbar input{border:1px solid #cbd6e3;border-radius:7px;padding:8px;background:#fff}
+.wide-card{margin-bottom:14px}
+.report-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+.summary{background:#f3f7fd;border-left:4px solid var(--blue);padding:15px;border-radius:6px;line-height:1.7}
+.action-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.action-card{padding:17px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.action-card strong{display:block;font-size:25px;margin-top:4px}
+.action-controls{display:flex;gap:5px;flex-wrap:wrap}
+.toast{position:fixed;right:24px;bottom:24px;background:#17283c;color:#fff;padding:12px 16px;border-radius:8px;box-shadow:var(--shadow);transform:translateY(100px);opacity:0;transition:.25s;z-index:50}
+.toast.show{transform:none;opacity:1}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.grid-live{grid-template-columns:1fr 1fr}.grid-live>.card:last-child{grid-column:1/-1}.grid-bottom{grid-template-columns:1fr 1fr}.grid-bottom>.card:first-child{grid-column:1/-1}}
+@media(max-width:800px){.shell{display:block}.sidebar{position:static;width:auto;padding:12px}.brand{padding:4px 6px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.side-foot{display:none}.workspace{display:block}.topbar{padding:0 14px}.top-status>*:not(.system-pill){display:none}main{padding:16px}.kpis{grid-template-columns:repeat(2,1fr)}.grid-live,.grid-bottom,.report-grid{grid-template-columns:1fr}.grid-live>.card:last-child,.grid-bottom>.card:first-child{grid-column:auto}.action-cards{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<header>
-  <h1>🦺 Safe<span>ON</span> 스마트 안전관제 대시보드</h1>
-  <div id="conn" class="conn off">서버 연결 대기중…</div>
-</header>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">S</div>SAFE<span style="color:#3fa0ff">ON</span></div>
+    <nav class="nav">
+      <button class="active" data-view="live"><span>◉</span>실시간 관제</button>
+      <button data-view="incidents"><span>⚠</span>위험사건</button>
+      <button data-view="environment"><span>♨</span>환경정보</button>
+      <button data-view="devices"><span>▣</span>장치상태</button>
+      <button data-view="report"><span>▤</span>보고서</button>
+      <button data-view="actions"><span>✓</span>개선조치</button>
+    </nav>
+    <div class="side-foot">SafeON v2.0<br>세부 명세서 기준 구현</div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="site-name">SafeON 스마트 건설현장 A</div>
+      <div class="top-status">
+        <span class="system-pill"><i class="dot"></i><span id="systemText">시스템 확인 중</span></span>
+        <span id="clock"></span><span>관리자</span>
+      </div>
+    </header>
+    <main>
+      <section class="view active" id="view-live">
+        <div class="page-head"><div><h1>실시간 안전관제</h1><div class="subtle">중장비-근로자 근접위험과 환경·카메라 상태를 실시간으로 확인합니다.</div></div><button class="btn" onclick="refreshAll()">새로고침</button></div>
+        <div class="kpis">
+          <div class="kpi"><div class="kpi-icon">↔</div><div><div class="kpi-label">현재 거리</div><div class="kpi-value mono" id="kpiDistance">--</div><div class="kpi-note">근로자 ↔ 중장비</div></div></div>
+          <div class="kpi"><div class="kpi-icon">!</div><div><div class="kpi-label">위험 단계</div><div class="kpi-value" id="kpiRisk">--</div><div class="kpi-note">1m 이하 DANGER</div></div></div>
+          <div class="kpi"><div class="kpi-icon">⚠</div><div><div class="kpi-label">활성 사건</div><div class="kpi-value" id="kpiActive">0건</div><div class="kpi-note">진행 중 위험사건</div></div></div>
+          <div class="kpi"><div class="kpi-icon">℃</div><div><div class="kpi-label">체감온도</div><div class="kpi-value mono" id="kpiHeat">--</div><div class="kpi-note" id="kpiHeatStage">수신 대기</div></div></div>
+          <div class="kpi"><div class="kpi-icon">♟</div><div><div class="kpi-label">근로자 장치</div><div class="kpi-value" id="kpiWorkers">0/0</div><div class="kpi-note">ONLINE</div></div></div>
+          <div class="kpi"><div class="kpi-icon">▣</div><div><div class="kpi-label">중장비 상태</div><div class="kpi-value" id="kpiEquipment">0/0</div><div class="kpi-note">ONLINE</div></div></div>
+        </div>
+        <div class="alert-banner" id="dangerBanner"><span id="dangerText">위험 경보 발생</span><button class="btn danger" onclick="showView('incidents')">사건 확인</button></div>
+        <div class="grid-live">
+          <article class="card">
+            <div class="card-head"><h2>실시간 현장 모니터링</h2><span class="badge ONLINE"><i class="dot"></i>&nbsp;LIVE</span></div>
+            <div class="live-stage" id="liveStage"><div class="empty">근접위험 데이터 수신 대기 중…</div></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h2>최근 위험사건</h2><button class="btn" onclick="showView('incidents')">전체 보기</button></div>
+            <div class="incident-list" id="recentIncidents"><div class="empty">기록된 사건이 없습니다.</div></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h2>환경 정보</h2><span class="subtle" id="envEquipment">--</span></div>
+            <div id="heatPanel"><div class="empty">온습도 데이터 수신 대기 중…</div></div>
+          </article>
+        </div>
+        <div class="grid-bottom">
+          <article class="card"><div class="card-head"><h2>거리 추이</h2><span class="subtle">위험 1m · 주의 3m</span></div><canvas id="distanceChart"></canvas></article>
+          <article class="card"><div class="card-head"><h2>장치 상태</h2><button class="btn" onclick="showView('devices')">상세</button></div><div class="device-list" id="devicePreview"></div></article>
+          <article class="card"><div class="card-head"><h2>후방 카메라 분석</h2><span class="subtle" id="cameraStatus">--</span></div><div id="cameraPanel"><div class="empty">카메라 데이터 수신 대기 중…</div></div></article>
+        </div>
+      </section>
 
-<div id="fallBanner">🚨 낙상 감지 — <span id="fallText"></span></div>
+      <section class="view" id="view-incidents">
+        <div class="page-head"><div><h1>위험사건</h1><div class="subtle">DANGER 진입부터 해제까지 하나의 사건으로 관리합니다.</div></div></div>
+        <div class="toolbar"><select id="incidentStatus" onchange="renderIncidents()"><option value="">전체 조치상태</option><option>OPEN</option><option>ACK</option><option>CLOSED</option></select><span class="subtle">사건을 확인하면 ACK, 조치가 끝나면 CLOSED로 변경하세요.</span></div>
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>사건 ID</th><th>시작/종료</th><th>근로자</th><th>중장비</th><th>최소거리</th><th>노출시간</th><th>온라인율</th><th>개선 권고</th><th>조치</th></tr></thead><tbody id="incidentRows"></tbody></table></div></article>
+      </section>
 
-<div class="grid">
-  <div class="panel full">
-    <h2>실시간 관제 현황 <span style="font-weight:400">(SAFE &gt;3m · CAUTION 1~3m · DANGER ≤1m)</span></h2>
-    <div id="cards"><div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div></div>
-  </div>
+      <section class="view" id="view-environment">
+        <div class="page-head"><div><h1>환경정보</h1><div class="subtle">기상청 여름철 체감온도 공식과 명세서의 5단계 기준을 적용합니다.</div></div></div>
+        <article class="card wide-card"><div class="table-wrap"><table><thead><tr><th>장비</th><th>측정시각</th><th>온도</th><th>습도</th><th>체감온도</th><th>단계</th><th>센서 상태</th><th>권고</th></tr></thead><tbody id="environmentRows"></tbody></table></div></article>
+        <article class="card"><div class="card-head"><h2>체감온도 대응 기준</h2><span class="subtle">35℃·38℃ 기준은 행정지침상 권고로 표시</span></div><div class="table-wrap"><table><thead><tr><th>단계</th><th>기준</th><th>처리</th><th>근로자 출력</th></tr></thead><tbody>
+          <tr><td><span class="badge NORMAL">NORMAL</span></td><td>31℃ 미만</td><td>정상 모니터링</td><td>녹색 LED</td></tr>
+          <tr><td><span class="badge HEAT_CAUTION">HEAT_CAUTION</span></td><td>31~33℃</td><td>수분·냉방·휴식 검토</td><td>황색 점멸·짧은 1회</td></tr>
+          <tr><td><span class="badge REST_REQUIRED">REST_REQUIRED</span></td><td>33~35℃</td><td>2시간 이내 20분 이상 휴식 기준</td><td>주황 점멸·3회+진동</td></tr>
+          <tr><td><span class="badge STOP_RECOMMENDED">STOP_RECOMMENDED</span></td><td>35~38℃</td><td>행정지침상 14~17시 작업중지 권고</td><td>적색 점멸·반복음</td></tr>
+          <tr><td><span class="badge EMERGENCY_STOP">EMERGENCY_STOP</span></td><td>38℃ 이상</td><td>행정지침상 긴급조치 외 작업중지 권고</td><td>빠른 적색·긴 경보</td></tr>
+        </tbody></table></div></article>
+      </section>
 
-  <div class="panel">
-    <h2>아차사고 보고서 (Incident) — DANGER 진입 시 자동 생성</h2>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>사건 ID</th><th>장비/근로자</th><th>시작</th><th>노출(초)</th><th>최소거리</th><th>조치</th><th></th></tr></thead>
-        <tbody id="incBody"></tbody>
-      </table>
-    </div>
-  </div>
+      <section class="view" id="view-devices">
+        <div class="page-head"><div><h1>장치상태</h1><div class="subtle">2초 미수신 DEGRADED, 5초 미수신 OFFLINE을 서버가 자체 판정합니다.</div></div></div>
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>장치 ID</th><th>유형</th><th>상태</th><th>마지막 정상 통신</th><th>수신 경과</th><th>MQTT</th><th>배터리</th><th>오류코드</th><th>펌웨어</th><th>온라인율</th></tr></thead><tbody id="deviceRows"></tbody></table></div></article>
+      </section>
 
-  <div class="panel">
-    <h2>이벤트 로그 (CAUTION 이상 관제 기록)</h2>
-    <div class="toolbar">
-      <select id="fltType">
-        <option value="">전체 유형</option>
-        <option value="nearmiss">근접위험</option>
-        <option value="fall">낙상</option>
-        <option value="env">이상환경</option>
-        <option value="camera">카메라감지</option>
-      </select>
-      <select id="fltLevel">
-        <option value="">전체 단계</option>
-        <option value="CAUTION">주의만</option>
-        <option value="DANGER">위험만</option>
-      </select>
-      <button onclick="loadEvents()">새로고침</button>
-    </div>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>시간</th><th>유형</th><th>장비</th><th>근로자</th><th>거리(m)</th><th>단계</th><th>비고</th></tr></thead>
-        <tbody id="logBody"></tbody>
-      </table>
-    </div>
-  </div>
+      <section class="view" id="view-report">
+        <div class="page-head"><div><h1>안전운영 보고서</h1><div class="subtle">최근 7일의 위험 노출과 장치 운영 상태를 요약합니다.</div></div><a class="btn primary" href="/api/report/incidents.csv">CSV 다운로드</a></div>
+        <div class="kpis" id="reportKpis"></div>
+        <div class="report-grid">
+          <article class="card"><div class="card-head"><h2>주간 보고서 요약</h2></div><div class="summary" id="reportSummary">데이터를 불러오는 중…</div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>사건</th><th>시작</th><th>장비/근로자</th><th>최소거리</th><th>노출</th><th>조치</th></tr></thead><tbody id="reportRows"></tbody></table></div></article>
+          <article class="card"><div class="card-head"><h2>일자별 위험 접근</h2></div><canvas id="reportChart"></canvas></article>
+        </div>
+      </section>
 
-  <div class="panel">
-    <h2>환경 (온습도 30분 주기 · 기상청 체감온도) / 후방 카메라</h2>
-    <div id="envCards" style="margin-bottom:10px"><div style="color:var(--muted);font-size:13px">환경 데이터 수신 대기중…</div></div>
-    <div id="camCards"></div>
-  </div>
-
-  <div class="panel">
-    <h2>장치상태 (2초 DEGRADED · 5초 OFFLINE · 온습도 2회 누락)</h2>
-    <div id="devCards"><div style="color:var(--muted);font-size:13px">장치 등록 대기중…</div></div>
-  </div>
-
-  <div class="panel">
-    <h2>안전 리포트
-      <button id="btnDaily" class="active" onclick="setPeriod('daily')">일일</button>
-      <button id="btnWeekly" onclick="setPeriod('weekly')">주간</button>
-    </h2>
-    <div class="kpis">
-      <div class="kpi"><div class="num" id="kpiInc">0</div><div class="lbl">아차사고 보고서</div></div>
-      <div class="kpi"><div class="num" id="kpiOpen" style="color:var(--danger)">0</div><div class="lbl">미조치(OPEN)</div></div>
-      <div class="kpi"><div class="num" id="kpiCaution" style="color:var(--caution)">0</div><div class="lbl">주의 진입</div></div>
-      <div class="kpi"><div class="num" id="kpiFall" style="color:var(--danger)">0</div><div class="lbl">낙상</div></div>
-    </div>
-    <div id="reportSummary">데이터 수집 중…</div>
-  </div>
-
-  <div class="panel">
-    <h2 id="chartTitle">시간대별 이벤트</h2>
-    <canvas id="mainChart"></canvas>
-  </div>
-
-  <div class="panel">
-    <h2>장비별 이벤트 순위</h2>
-    <canvas id="equipChart"></canvas>
+      <section class="view" id="view-actions">
+        <div class="page-head"><div><h1>개선조치 및 후속관리</h1><div class="subtle">위험사건별 권고를 실행 가능한 조치로 추적합니다.</div></div><button class="btn primary" onclick="newAction()">+ 신규 조치 등록</button></div>
+        <div class="action-cards" id="actionCards"></div>
+        <article class="card"><div class="table-wrap"><table><thead><tr><th>조치 ID</th><th>관련 사건</th><th>개선 방향</th><th>우선순위</th><th>담당자</th><th>기한</th><th>상태</th><th>변경</th></tr></thead><tbody id="actionRows"></tbody></table></div></article>
+      </section>
+    </main>
   </div>
 </div>
-
+<div class="toast" id="toast"></div>
 <script>
-const levelKo = { SAFE:"안전", CAUTION:"주의", DANGER:"위험", OFFLINE:"통신장애" };
-const typeKo = { nearmiss:"근접위험", fall:"낙상", env:"이상환경", camera:"카메라" };
-const heatKo = { NORMAL:"정상", HEAT_CAUTION:"폭염주의", REST_REQUIRED:"휴식필요",
-                 STOP_RECOMMENDED:"작업중지권고", EMERGENCY_STOP:"긴급중지" };
-const live = {}, env = {}, cams = {};
-let devices = [], period = "daily";
+const state={proximity:new Map(),environment:new Map(),cameras:new Map(),incidents:[],devices:[],actions:[],report:null,distanceHistory:[]};
+const riskKo={SAFE:"안전",CAUTION:"주의",DANGER:"위험",OFFLINE:"통신장애"};
+const typeIcon={WORKER:"♟",EQUIPMENT:"▣",CAMERA:"◉"};
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtTime=v=>v?new Date(v).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"--";
+const fmtDuration=s=>s==null?"--":`${Number(s).toFixed(1)}초`;
+const latest=map=>[...map.values()].sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp))[0];
+function toast(message){const el=document.getElementById("toast");el.textContent=message;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2400)}
+async function api(path,options){const r=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!r.ok)throw new Error(await r.text());return r.json()}
+function showView(name){document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(`view-${name}`).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.view===name));if(name==="report")setTimeout(drawReportChart,40)}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+function badge(value){return `<span class="badge ${esc(value)}">${esc(value)}</span>`}
 
-// ---------- WebSocket ----------
-let ws, wsTimer;
-function connect() {
-  ws = new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}/ws/live`);
-  ws.onopen = () => { setConn(true); wsTimer = setInterval(()=>ws.send("ping"), 15000); };
-  ws.onclose = () => { setConn(false); clearInterval(wsTimer); setTimeout(connect, 2000); };
-  ws.onmessage = e => {
-    const d = JSON.parse(e.data);
-    if (d.type === "live") {
-      live[`${d.equipment_id}|${d.worker_id}`] = d;
-      renderCards();
-      if (d.event_recorded) { loadEvents(); loadReport(); }
-    } else if (d.type === "incident") { loadIncidents(); loadReport(); }
-    else if (d.type === "env") { env[d.equipment_id] = d; renderEnv(); loadEvents(); loadReport(); }
-    else if (d.type === "camera") { cams[d.equipment_id] = d; renderCam(); loadEvents(); }
-    else if (d.type === "fall") { showFall(d); loadEvents(); loadReport(); }
-    else if (d.type === "devices") { devices = d.devices; renderDev(); }
-    else if (d.type === "batch") { loadEvents(); loadIncidents(); loadReport(); }
-  };
+async function refreshAll(){
+  try{
+    const [live,incidents,devices,report,actions]=await Promise.all([api("/api/live"),api("/api/incidents?limit=200"),api("/api/devices"),api("/api/report/weekly"),api("/api/actions")]);
+    live.proximity.forEach(x=>state.proximity.set(`${x.equipment_id}:${x.worker_id}`,x));
+    live.environment.forEach(x=>state.environment.set(x.equipment_id,x));
+    live.cameras.forEach(x=>state.cameras.set(x.equipment_id,x));
+    state.incidents=incidents;state.devices=devices;state.report=report;state.actions=actions;
+    renderAll();
+  }catch(e){toast("데이터를 불러오지 못했습니다.");console.error(e)}
 }
-function setConn(on) {
-  const el = document.getElementById("conn");
-  el.className = "conn " + (on?"on":"off");
-  el.textContent = on ? "서버 연결됨 (MQTT 수신중)" : "연결 끊김 — 재연결 중…";
+function renderAll(){renderLive();renderIncidents();renderEnvironment();renderDevices();renderReport();renderActions()}
+function renderLive(){
+  const p=latest(state.proximity),env=latest(state.environment),cam=latest(state.cameras);
+  document.getElementById("kpiDistance").textContent=p?`${Number(p.distance_m).toFixed(2)}m`:"--";
+  const risk=document.getElementById("kpiRisk");risk.textContent=p?riskKo[p.risk_level]:"--";risk.style.color=p?.risk_level==="DANGER"?"var(--red)":p?.risk_level==="CAUTION"?"var(--yellow)":p?.risk_level==="SAFE"?"var(--green)":"";
+  document.getElementById("kpiActive").textContent=`${state.incidents.filter(x=>!x.end_ts).length}건`;
+  document.getElementById("kpiHeat").textContent=env?`${Number(env.apparent_temperature_c).toFixed(1)}℃`:"--";
+  document.getElementById("kpiHeatStage").textContent=env?env.heat_label||env.heat_level:"수신 대기";
+  const workers=state.devices.filter(x=>x.device_type==="WORKER"),equipment=state.devices.filter(x=>x.device_type==="EQUIPMENT");
+  document.getElementById("kpiWorkers").textContent=`${workers.filter(x=>x.status==="ONLINE").length}/${workers.length}`;
+  document.getElementById("kpiEquipment").textContent=`${equipment.filter(x=>x.status==="ONLINE").length}/${equipment.length}`;
+  const banner=document.getElementById("dangerBanner");banner.classList.toggle("show",p?.risk_level==="DANGER");
+  if(p?.risk_level==="DANGER")document.getElementById("dangerText").textContent=`위험 경보 — ${p.worker_id} ↔ ${p.equipment_id}, ${Number(p.distance_m).toFixed(2)}m`;
+  renderLiveStage(p);renderRecent();renderHeat(env);renderDevicePreview();renderCamera(cam);drawDistanceChart();
 }
-function showFall(d) {
-  document.getElementById("fallText").textContent =
-    `${d.worker_id} · ${d.detail||"헬멧 자이로 감지"} (${new Date().toLocaleTimeString()})`;
-  const b = document.getElementById("fallBanner");
-  b.style.display = "block";
-  setTimeout(()=>{ b.style.display = "none"; }, 15000);
+function renderLiveStage(p){
+  const el=document.getElementById("liveStage");if(!p){el.innerHTML='<div class="empty">근접위험 데이터 수신 대기 중…</div>';return}
+  const position=Math.max(2,Math.min(98,Number(p.distance_m)/4*100));
+  el.innerHTML=`<div class="pair-main"><div class="entity"><div class="entity-icon">👷</div><div class="entity-name">${esc(p.worker_id)}</div><div class="subtle">근로자 장치</div></div><div class="distance-line"><div class="distance-value mono">${Number(p.distance_m).toFixed(2)}m</div><div>${badge(p.risk_level)}</div><div class="distance-track"><i class="distance-marker" style="left:calc(${position}% - 8px)"></i></div><div class="subtle" style="margin-top:9px">1m 위험 · 3m 주의</div></div><div class="entity"><div class="entity-icon">🏗️</div><div class="entity-name">${esc(p.equipment_id)}</div><div class="subtle">중장비</div></div></div><div class="pair-meta"><span class="badge OPEN">SEQ ${esc(p.sequence)}</span><span class="badge ${p.near_miss?"DANGER":"SAFE"}">아차사고 ${p.near_miss?"YES":"NO"}</span><span class="badge ${p.risk_mismatch?"CAUTION":"ONLINE"}">판정 ${p.risk_mismatch?"서버 보정":"일치"}</span><span class="subtle">${fmtTime(p.timestamp)}</span></div>`;
 }
-
-// ---------- 실시간 카드 (OFFLINE 자체 판정: 5초 미수신) ----------
-function renderCards() {
-  const now = Date.now()/1000;
-  const el = document.getElementById("cards");
-  el.innerHTML = Object.values(live).map(d => {
-    const gap = now - d.ts;
-    const lv = gap >= 5 ? "OFFLINE" : d.risk_level;
-    return `<div class="card b-${lv}">
-      <div class="pair">🚜 ${d.equipment_id} ↔ 👷 ${d.worker_id}</div>
-      <div class="dist">${lv==="OFFLINE"?"—":d.distance_m}<small style="font-size:14px;color:var(--muted)"> m</small></div>
-      <span class="badge lv-${lv}">${levelKo[lv]||lv}</span>
-      ${d.near_miss&&lv!=="OFFLINE"?'<span class="tbadge t-fall">near_miss</span>':""}
-      ${d.edge_judged?'<span class="tbadge">엣지판정</span>':""}
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">
-        seq ${d.sequence??"-"} ${d.battery!=null?` · 🔋${d.battery}%`:""}
-        ${lv==="OFFLINE"?` · ${Math.round(gap)}초 미수신`:""}
-      </div>
-    </div>`;
-  }).join("") || '<div style="color:var(--muted);font-size:13px">태그 데이터 수신 대기중…</div>';
+function renderRecent(){
+  const items=state.incidents.slice(0,5),el=document.getElementById("recentIncidents");if(!items.length){el.innerHTML='<div class="empty">기록된 사건이 없습니다.</div>';return}
+  el.innerHTML=items.map(x=>`<div class="incident-item"><i class="incident-color"></i><div><div class="incident-title">${esc(x.event_id)} · ${Number(x.min_distance_m).toFixed(2)}m</div><div class="incident-detail">${esc(x.worker_id)} ↔ ${esc(x.equipment_id)} · ${fmtTime(x.start_ts)} · ${fmtDuration(x.exposure_seconds)}</div></div>${badge(x.action_status)}</div>`).join("");
 }
-setInterval(renderCards, 1000);
-
-// ---------- 환경/카메라 ----------
-function renderEnv() {
-  document.getElementById("envCards").innerHTML = Object.values(env).map(d => {
-    const bad = d.heat_stage && d.heat_stage !== "NORMAL";
-    return `<div class="envcard ${["STOP_RECOMMENDED","EMERGENCY_STOP"].includes(d.heat_stage)?"alert":""}">
-      <div style="color:var(--muted)">🚜 ${d.equipment_id} · 센서 ${d.sensor_status||"?"}</div>
-      <div class="vals">🌡 ${d.temperature_c??"-"}°C 💧 ${d.humidity_pct??"-"}%</div>
-      <div>체감 <b>${d.apparent_c??"-"}°C</b>
-        <span class="heat-${d.heat_stage}">${heatKo[d.heat_stage]||"-"}</span></div>
-      ${bad?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${d.advice||""}</div>`:""}
-    </div>`;
-  }).join("") || '<div style="color:var(--muted);font-size:13px">환경 데이터 수신 대기중…</div>';
+function renderHeat(env){
+  const el=document.getElementById("heatPanel");if(!env){el.innerHTML='<div class="empty">온습도 데이터 수신 대기 중…</div>';return}
+  document.getElementById("envEquipment").textContent=env.equipment_id;
+  const marker=Math.max(0,Math.min(100,(Number(env.apparent_temperature_c)-25)/15*100));
+  el.innerHTML=`<div class="heat-number">${Number(env.apparent_temperature_c).toFixed(1)}℃</div><div>${badge(env.heat_level)}</div><div class="heat-grid"><div class="mini-metric"><span class="subtle">온도</span><strong>${Number(env.temperature_c).toFixed(1)}℃</strong></div><div class="mini-metric"><span class="subtle">습도</span><strong>${Number(env.humidity_pct).toFixed(1)}%</strong></div></div><div class="heat-scale"><i class="heat-marker" style="left:${marker}%"></i></div><div class="guidance">${esc(env.guidance)}${env.legal_basis==="administrative_recommendation"?"<br><strong>※ 행정지침상 권고기준</strong>":""}</div>`;
 }
-function renderCam() {
-  document.getElementById("camCards").innerHTML = Object.values(cams).map(d => `
-    <div class="envcard" style="${d.person_detected?"border-color:var(--danger)":""}">
-      <div style="color:var(--muted)">📷 ${d.equipment_id} 후방카메라 · ${d.camera_status}</div>
-      <div style="font-size:15px;font-weight:700;margin-top:4px;color:${d.person_detected?"var(--danger)":"var(--safe)"}">
-        ${d.person_detected?`⚠ 사람 감지 (신뢰도 ${d.confidence})`:"이상 없음"}
-      </div>
-    </div>`).join("");
+function renderDevicePreview(){
+  const el=document.getElementById("devicePreview"),items=state.devices.slice(0,5);if(!items.length){el.innerHTML='<div class="empty">장치 데이터 없음</div>';return}
+  el.innerHTML=items.map(x=>`<div class="device"><div class="device-icon">${typeIcon[x.device_type]||"•"}</div><div><strong>${esc(x.device_id)}</strong><div class="subtle">${esc(x.device_type)} · ${Number(x.online_rate).toFixed(1)}%</div></div>${badge(x.status)}</div>`).join("");
 }
-
-// ---------- 장치상태 ----------
-function renderDev() {
-  document.getElementById("devCards").innerHTML = devices.map(d => `
-    <div class="devcard">
-      <b>${d.device_id}</b> <span style="color:var(--muted)">(${d.type})</span><br>
-      상태: <b class="st-${d.status}">${d.status}</b> · ${d.last_seen_ago_sec}초 전 수신<br>
-      <span style="color:var(--muted)">🔋 ${d.battery??"-"}% · 오류 ${d.error_code??"없음"}</span>
-    </div>`).join("") || '<div style="color:var(--muted);font-size:13px">장치 등록 대기중…</div>';
+function renderCamera(cam){
+  const el=document.getElementById("cameraPanel");if(!cam){el.innerHTML='<div class="empty">카메라 데이터 수신 대기 중…</div>';return}
+  document.getElementById("cameraStatus").innerHTML=badge(cam.camera_status);
+  el.innerHTML=`<div class="camera-view"><div>${esc(cam.equipment_id)} 후방 분석</div><div class="subtle" style="color:#aebdce">${fmtTime(cam.timestamp)}</div><span class="camera-detected" style="background:${cam.person_detected?"#e23636":"#16894d"}">${cam.person_detected?"사람 감지":"감지 없음"} · ${(Number(cam.confidence)*100).toFixed(0)}%</span></div>`;
 }
-async function pollDevices() {
-  try { devices = await (await fetch("/api/devices")).json(); renderDev(); } catch(e){}
+function renderIncidents(){
+  const filter=document.getElementById("incidentStatus")?.value||"",items=state.incidents.filter(x=>!filter||x.action_status===filter),el=document.getElementById("incidentRows");
+  el.innerHTML=items.length?items.map(x=>`<tr><td><strong>${esc(x.event_id)}</strong>${x.end_ts?"":"<br>"+badge("DANGER")}</td><td>${fmtTime(x.start_ts)}<br><span class="subtle">${x.end_ts?fmtTime(x.end_ts):"진행 중"}</span></td><td>${esc(x.worker_id)}</td><td>${esc(x.equipment_id)}</td><td><strong>${Number(x.min_distance_m).toFixed(2)}m</strong></td><td>${fmtDuration(x.exposure_seconds)}</td><td>${Number(x.online_rate).toFixed(1)}%</td><td style="min-width:260px">${esc(x.recommendation)}</td><td><div class="action-controls">${badge(x.action_status)}${x.action_status==="OPEN"?`<button class="btn good" data-incident="${esc(x.event_id)}" data-next="ACK">확인</button>`:""}${x.action_status!=="CLOSED"?`<button class="btn" data-incident="${esc(x.event_id)}" data-next="CLOSED">완료</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="9" class="empty">조건에 맞는 사건이 없습니다.</td></tr>';
+  el.querySelectorAll("[data-incident]").forEach(b=>b.onclick=()=>updateIncident(b.dataset.incident,b.dataset.next));
 }
-setInterval(pollDevices, 3000);
-
-// ---------- 아차사고 보고서 ----------
-async function loadIncidents() {
-  const rows = await (await fetch("/api/incidents?limit=50")).json();
-  document.getElementById("incBody").innerHTML = rows.map(r => `<tr>
-    <td>${r.event_uid}</td>
-    <td>${r.equipment_id??"-"} / ${r.worker_id??"-"}</td>
-    <td>${(r.start_ts||"").replace("T"," ").slice(5)}</td>
-    <td>${r.duration_sec!=null?r.duration_sec.toFixed(1):"진행중"}</td>
-    <td>${r.min_distance_m??"-"}m</td>
-    <td class="as-${r.action_status}">${r.action_status}</td>
-    <td>
-      ${r.action_status==="OPEN"?`<button class="mini" onclick="setAction('${r.event_uid}','ACK')">확인</button>`:""}
-      ${r.action_status!=="CLOSED"?`<button class="mini" onclick="setAction('${r.event_uid}','CLOSED')">종결</button>`:""}
-    </td>
-  </tr>
-  ${r.recommendation?`<tr><td colspan="7" style="color:var(--muted);font-size:12px;border-bottom:1px solid var(--border)">↳ 권고: ${r.recommendation}</td></tr>`:""}`).join("");
+async function updateIncident(id,status){try{await api(`/api/incidents/${encodeURIComponent(id)}/action`,{method:"PATCH",body:JSON.stringify({action_status:status})});toast(`${id} 조치상태가 ${status}로 변경됐습니다.`);await loadIncidentsAndActions()}catch(e){toast("조치상태 변경에 실패했습니다.")}}
+function renderEnvironment(){
+  const rows=[...state.environment.values()].sort((a,b)=>String(a.equipment_id).localeCompare(String(b.equipment_id))),el=document.getElementById("environmentRows");
+  el.innerHTML=rows.length?rows.map(x=>`<tr><td><strong>${esc(x.equipment_id)}</strong></td><td>${fmtTime(x.timestamp)}</td><td>${Number(x.temperature_c).toFixed(1)}℃</td><td>${Number(x.humidity_pct).toFixed(1)}%</td><td><strong>${Number(x.apparent_temperature_c).toFixed(1)}℃</strong></td><td>${badge(x.heat_level)}</td><td>${badge(x.sensor_status)}</td><td style="min-width:300px">${esc(x.guidance||"")}</td></tr>`).join(""):'<tr><td colspan="8" class="empty">환경 데이터가 없습니다.</td></tr>';
 }
-async function setAction(uid, status) {
-  await fetch(`/api/incidents/${uid}?status=${status}`, { method:"PATCH" });
-  loadIncidents(); loadReport();
+function renderDevices(){
+  const el=document.getElementById("deviceRows");el.innerHTML=state.devices.length?state.devices.map(x=>`<tr><td><strong>${esc(x.device_id)}</strong></td><td>${esc(x.device_type)}</td><td>${badge(x.status)}</td><td>${fmtTime(x.last_seen)}</td><td>${Number(x.age_seconds).toFixed(1)}초</td><td>${x.mqtt_connected?"연결":"미연결"}</td><td>${x.battery_pct==null?"--":Number(x.battery_pct).toFixed(0)+"%"}</td><td>${esc(x.sensor_error_code||"--")}</td><td>${esc(x.firmware_version||"--")}</td><td>${Number(x.online_rate).toFixed(1)}%</td></tr>`).join(""):'<tr><td colspan="10" class="empty">등록된 장치가 없습니다.</td></tr>';
 }
-
-// ---------- 이벤트 로그 ----------
-async function loadEvents() {
-  const lv = document.getElementById("fltLevel").value;
-  const tp = document.getElementById("fltType").value;
-  const rows = await (await fetch(`/api/events?limit=100${lv?`&risk_level=${lv}`:""}${tp?`&event_type=${tp}`:""}`)).json();
-  document.getElementById("logBody").innerHTML = rows.map(r => `<tr>
-    <td>${r.ts.replace("T"," ").slice(5)}</td>
-    <td><span class="tbadge t-${r.event_type}">${typeKo[r.event_type]||r.event_type}</span></td>
-    <td>${r.equipment_id??"-"}</td><td>${r.worker_id??"-"}</td>
-    <td>${r.distance_m??"-"}</td>
-    <td><span class="badge lv-${r.risk_level}">${levelKo[r.risk_level]||r.risk_level}</span></td>
-    <td style="color:var(--muted)">${r.detail||""}</td>
-  </tr>`).join("");
+function renderReport(){
+  const r=state.report;if(!r)return;document.getElementById("reportSummary").textContent=r.summary;
+  const items=[["위험 접근 건수",`${r.total_incidents}건`,"⚠"],["총 위험 노출",`${Number(r.total_exposure_seconds).toFixed(1)}초`,"◷"],["최소 접근거리",r.minimum_distance_m==null?"--":`${Number(r.minimum_distance_m).toFixed(2)}m`,"↔"],["조치 완료율",`${Number(r.action_close_rate).toFixed(1)}%`,"✓"],["장치 온라인율",`${Number(r.device_online_rate).toFixed(1)}%`,"⌁"],["최고 체감온도",r.max_apparent_temperature_c==null?"--":`${Number(r.max_apparent_temperature_c).toFixed(1)}℃`,"℃"]];
+  document.getElementById("reportKpis").innerHTML=items.map(x=>`<div class="kpi"><div class="kpi-icon">${x[2]}</div><div><div class="kpi-label">${x[0]}</div><div class="kpi-value">${x[1]}</div></div></div>`).join("");
+  document.getElementById("reportRows").innerHTML=r.incidents.length?r.incidents.slice(0,10).map(x=>`<tr><td>${esc(x.event_id)}</td><td>${fmtTime(x.start_ts)}</td><td>${esc(x.equipment_id)} / ${esc(x.worker_id)}</td><td>${Number(x.min_distance_m).toFixed(2)}m</td><td>${fmtDuration(x.exposure_seconds)}</td><td>${badge(x.action_status)}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">주간 사건이 없습니다.</td></tr>';
+  drawReportChart();
 }
-document.getElementById("fltLevel").onchange = loadEvents;
-document.getElementById("fltType").onchange = loadEvents;
-
-// ---------- 리포트 & 차트 ----------
-let mainChart, equipChart;
-function setPeriod(p) {
-  period = p;
-  document.getElementById("btnDaily").className = p==="daily"?"active":"";
-  document.getElementById("btnWeekly").className = p==="weekly"?"active":"";
-  document.getElementById("chartTitle").textContent = p==="daily"?"시간대별 이벤트":"일자별 이벤트";
-  if (mainChart) { mainChart.destroy(); mainChart = null; }
-  loadReport();
+function renderActions(){
+  const counts={OPEN:0,IN_PROGRESS:0,CLOSED:0,HIGH:0};state.actions.forEach(x=>{counts[x.status]=(counts[x.status]||0)+1;if(x.priority==="HIGH"&&x.status!=="CLOSED")counts.HIGH++});
+  document.getElementById("actionCards").innerHTML=[["미조치",counts.OPEN],["진행중",counts.IN_PROGRESS],["완료",counts.CLOSED],["고위험 미완료",counts.HIGH]].map(x=>`<div class="action-card"><span class="subtle">${x[0]}</span><strong>${x[1]}건</strong></div>`).join("");
+  const el=document.getElementById("actionRows");el.innerHTML=state.actions.length?state.actions.map(x=>`<tr><td><strong>${esc(x.action_id)}</strong></td><td>${esc(x.event_id||"--")}</td><td><strong>${esc(x.title)}</strong><div class="subtle">${esc(x.description)}</div></td><td>${badge(x.priority)}</td><td>${esc(x.assignee||"미지정")}</td><td>${esc(x.due_date||"--")}</td><td>${badge(x.status)}</td><td><div class="action-controls">${x.status==="OPEN"?`<button class="btn good" data-action="${esc(x.action_id)}" data-next="IN_PROGRESS">시작</button>`:""}${x.status!=="CLOSED"?`<button class="btn" data-action="${esc(x.action_id)}" data-next="CLOSED">완료</button>`:""}</div></td></tr>`).join(""):'<tr><td colspan="8" class="empty">등록된 개선조치가 없습니다.</td></tr>';
+  el.querySelectorAll("[data-action]").forEach(b=>b.onclick=()=>updateAction(b.dataset.action,b.dataset.next));
 }
-async function loadReport() {
-  const r = await (await fetch(period==="daily"?"/api/report/daily":"/api/report/weekly")).json();
-  document.getElementById("kpiInc").textContent = r.incidents.count;
-  document.getElementById("kpiOpen").textContent = r.incidents.open;
-  document.getElementById("kpiCaution").textContent = r.by_level["CAUTION"]||0;
-  document.getElementById("kpiFall").textContent = r.by_type["fall"]||0;
-  document.getElementById("reportSummary").textContent = r.summary;
-
-  let labels, data;
-  if (period === "daily") {
-    const hours = [...Array(24).keys()].map(h=>String(h).padStart(2,"0"));
-    labels = hours.map(h=>h+"시"); data = hours.map(h=>r.by_hour[h]||0);
-  } else {
-    labels = r.days.map(d=>d.slice(5)); data = r.days.map(d=>r.by_day[d]||0);
-  }
-  if (!mainChart) {
-    mainChart = new Chart(document.getElementById("mainChart"), {
-      type:"bar",
-      data:{ labels, datasets:[{ data, backgroundColor:"#58a6ff" }]},
-      options:{ plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:"#8b949e",precision:0},grid:{color:"#21262d"}}, x:{ticks:{color:"#8b949e"},grid:{display:false}} } }
-    });
-  } else { mainChart.data.labels = labels; mainChart.data.datasets[0].data = data; mainChart.update(); }
-
-  const eqLabels = r.by_equip.map(e=>e.equipment_id), eqData = r.by_equip.map(e=>e.c);
-  if (!equipChart) {
-    equipChart = new Chart(document.getElementById("equipChart"), {
-      type:"bar",
-      data:{ labels:eqLabels, datasets:[{ data:eqData, backgroundColor:"#d29922" }]},
-      options:{ indexAxis:"y", plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:"#8b949e",precision:0},grid:{color:"#21262d"}}, y:{ticks:{color:"#8b949e"},grid:{display:false}} } }
-    });
-  } else { equipChart.data.labels = eqLabels; equipChart.data.datasets[0].data = eqData; equipChart.update(); }
+async function updateAction(id,status){try{await api(`/api/actions/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status})});toast(`${id} 상태가 ${status}로 변경됐습니다.`);await loadIncidentsAndActions()}catch(e){toast("개선조치 변경에 실패했습니다.")}}
+async function newAction(){const title=prompt("개선조치 제목을 입력하세요.");if(!title)return;const description=prompt("조치 내용을 입력하세요.")||"";try{await api("/api/actions",{method:"POST",body:JSON.stringify({title,description,priority:"MEDIUM"})});toast("신규 개선조치를 등록했습니다.");await loadIncidentsAndActions()}catch(e){toast("개선조치 등록에 실패했습니다.")}}
+async function loadIncidentsAndActions(){const [incidents,actions,report]=await Promise.all([api("/api/incidents?limit=200"),api("/api/actions"),api("/api/report/weekly")]);state.incidents=incidents;state.actions=actions;state.report=report;renderIncidents();renderRecent();renderActions();renderReport();renderLive()}
+function prepCanvas(id){const c=document.getElementById(id);if(!c||!c.offsetParent)return null;const ratio=window.devicePixelRatio||1,w=c.clientWidth,h=215;c.width=w*ratio;c.height=h*ratio;const x=c.getContext("2d");x.scale(ratio,ratio);x.clearRect(0,0,w,h);return {c,x,w,h}}
+function drawDistanceChart(){
+  const o=prepCanvas("distanceChart");if(!o)return;const {x,w,h}=o,pad=30,data=state.distanceHistory.slice(-60);x.strokeStyle="#dbe3ed";x.lineWidth=1;for(let i=0;i<=4;i++){const y=pad+(h-2*pad)*i/4;x.beginPath();x.moveTo(pad,y);x.lineTo(w-pad,y);x.stroke()}
+  const yFor=v=>h-pad-(Math.min(5,Math.max(0,v))/5)*(h-2*pad);[1,3].forEach((v,i)=>{x.strokeStyle=i?"#eaa400":"#e23434";x.setLineDash([5,4]);x.beginPath();x.moveTo(pad,yFor(v));x.lineTo(w-pad,yFor(v));x.stroke();x.setLineDash([]);x.fillStyle=x.strokeStyle;x.fillText(`${v}m`,4,yFor(v)+4)});
+  if(data.length<2){x.fillStyle="#8090a3";x.fillText("수신 데이터가 쌓이면 거리 추이가 표시됩니다.",pad,95);return}x.strokeStyle="#1268e8";x.lineWidth=2.5;x.beginPath();data.forEach((d,i)=>{const px=pad+i/(data.length-1)*(w-2*pad),py=yFor(d);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()
 }
-
-connect();
-loadEvents();
-loadIncidents();
-loadReport();
-pollDevices();
-(async()=>{ const rows = await (await fetch("/api/env")).json(); rows.forEach(r=>env[r.equipment_id]=r); renderEnv(); })();
-setInterval(loadReport, 10000);
+function drawReportChart(){
+  const o=prepCanvas("reportChart"),r=state.report;if(!o||!r)return;const {x,w,h}=o,entries=Object.entries(r.by_day),pad=34,max=Math.max(1,...entries.map(x=>x[1]));x.strokeStyle="#dce4ef";x.beginPath();x.moveTo(pad,10);x.lineTo(pad,h-pad);x.lineTo(w-10,h-pad);x.stroke();const slot=(w-pad-20)/Math.max(1,entries.length);entries.forEach(([day,val],i)=>{const bh=(h-pad-20)*val/max,bx=pad+i*slot+slot*.2,by=h-pad-bh;x.fillStyle="#2377e8";x.fillRect(bx,by,slot*.6,bh);x.fillStyle="#52637a";x.font="11px sans-serif";x.fillText(String(val),bx+slot*.25,by-5);x.save();x.translate(bx,h-12);x.rotate(-.35);x.fillText(day.slice(5),0,0);x.restore()});if(!entries.length){x.fillStyle="#8090a3";x.fillText("주간 위험사건 데이터가 없습니다.",pad,95)}}
+function connectWs(){const protocol=location.protocol==="https:"?"wss":"ws",ws=new WebSocket(`${protocol}://${location.host}/ws/live`);let timer;ws.onopen=()=>{document.getElementById("systemText").textContent="시스템 정상";timer=setInterval(()=>ws.send("ping"),15000)};ws.onmessage=async e=>{const d=JSON.parse(e.data);if(d.type==="proximity"){state.proximity.set(`${d.equipment_id}:${d.worker_id}`,d);state.distanceHistory.push(Number(d.distance_m));if(state.distanceHistory.length>120)state.distanceHistory.shift();renderLive();if(d.incident_transition)await loadIncidentsAndActions()}else if(d.type==="environment"){state.environment.set(d.equipment_id,d);renderEnvironment();renderLive()}else if(d.type==="camera"){state.cameras.set(d.equipment_id,d);renderLive()}else if(["device","incident","incident_action","improvement_action"].includes(d.type)){await refreshAll()}};ws.onclose=()=>{clearInterval(timer);document.getElementById("systemText").textContent="재연결 중";setTimeout(connectWs,2000)}}
+async function pollDevices(){try{state.devices=await api("/api/devices");renderDevices();renderDevicePreview();renderLive()}catch{}}
+setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleString("ko-KR"),1000);
+setInterval(pollDevices,2000);
+window.addEventListener("resize",()=>{drawDistanceChart();drawReportChart()});
+refreshAll();connectWs();
 </script>
 </body>
 </html>

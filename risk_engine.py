@@ -1,88 +1,152 @@
-"""위험도·체감온도 엔진 — 명세서 기준 순수 로직 (단위 테스트 대상)."""
+"""Pure SafeON safety calculations.
+
+The functions are independent from FastAPI, MQTT and SQLite so the exact
+specification boundaries can be unit-tested.
+"""
+
+from __future__ import annotations
+
 import math
-import time
-from collections import deque
-from dataclasses import dataclass, field
 
 import config
 
 
-# ---------- 거리 3단계 판정 (명세서) ----------
-def classify(distance_m: float) -> str:
-    """SAFE: 3m 초과 / CAUTION: 1~3m / DANGER: 1m 이하"""
-    if distance_m > config.DIST_CAUTION_M:
-        return config.RISK_SAFE
-    if distance_m > config.DIST_DANGER_M:
-        return config.RISK_CAUTION
-    return config.RISK_DANGER
+def risk_level_for_distance(distance_m: float | None) -> str:
+    """Return SAFE/CAUTION/DANGER/OFFLINE using the final three-stage rule."""
+    if distance_m is None:
+        return "OFFLINE"
+    if distance_m <= config.DISTANCE_DANGER_M:
+        return "DANGER"
+    if distance_m <= config.DISTANCE_CAUTION_M:
+        return "CAUTION"
+    return "SAFE"
 
 
-def is_near_miss(risk_level: str) -> bool:
-    """명세서 권고: DANGER이면 near_miss = true (아차사고 보고서 생성)"""
-    return risk_level == config.RISK_DANGER
+def normalize_risk_level(value, distance_m: float | None = None) -> str:
+    """Normalize canonical strings and legacy numeric levels.
+
+    Legacy 0/1 values become SAFE/CAUTION and legacy 2/3 values become DANGER.
+    When no value is supplied, the server calculates from distance.
+    """
+    if value is None:
+        return risk_level_for_distance(distance_m)
+    if isinstance(value, str):
+        text = value.strip().upper()
+        if text in config.RISK_LEVELS:
+            return text
+        if text.isdigit():
+            value = int(text)
+    if isinstance(value, (int, float)):
+        numeric = int(value)
+        if numeric <= 0:
+            return "SAFE"
+        if numeric == 1:
+            return "CAUTION"
+        return "DANGER"
+    raise ValueError(f"지원하지 않는 risk_level: {value!r}")
 
 
-@dataclass
-class PairTracker:
-    """(중장비, 근로자) 쌍의 시계열: 이동평균 필터 + 단계 변화 감지."""
-    raw: deque = field(default_factory=lambda: deque(maxlen=config.FILTER_WINDOW))
-    level: str = config.RISK_SAFE
-    level_since: float = 0.0
-    last_seen: float = 0.0
-
-    def update(self, distance_m: float, edge_level: str | None = None,
-               now: float | None = None):
-        """반환: (filtered_m, level, changed). 엣지 판정값이 오면 우선 사용."""
-        now = now if now is not None else time.time()
-        self.last_seen = now
-        self.raw.append(distance_m)
-        filtered = sum(self.raw) / len(self.raw)
-        level = edge_level if edge_level in config.RISK_ORDER else classify(filtered)
-        changed = level != self.level
-        if changed:
-            self.level = level
-            self.level_since = now
-        return filtered, level, changed
-
-    def dwell_seconds(self, now: float | None = None) -> float:
-        now = now if now is not None else time.time()
-        return now - self.level_since if self.level_since else 0.0
+def wet_bulb_temperature(temperature_c: float, humidity_pct: float) -> float:
+    """Calculate Tw with the formula provided in the implementation spec."""
+    ta = float(temperature_c)
+    rh = min(100.0, max(0.0, float(humidity_pct)))
+    return (
+        ta * math.atan(0.151977 * math.sqrt(rh + 8.313659))
+        + math.atan(ta + rh)
+        - math.atan(rh - 1.67633)
+        + 0.00391838 * (rh ** 1.5) * math.atan(0.023101 * rh)
+        - 4.686035
+    )
 
 
-# ---------- 체감온도 (기상청 여름철 공식) ----------
-def wet_bulb(ta: float, rh: float) -> float:
-    """Stull 습구온도 근사식. ta: 기온(℃), rh: 상대습도(%)"""
-    return (ta * math.atan(0.151977 * math.sqrt(rh + 8.313659))
-            + math.atan(ta + rh)
-            - math.atan(rh - 1.67633)
-            + 0.00391838 * rh ** 1.5 * math.atan(0.023101 * rh)
-            - 4.686035)
+def apparent_temperature(temperature_c: float, humidity_pct: float) -> float:
+    """Calculate the Korean summer apparent temperature from Ta and Tw."""
+    ta = float(temperature_c)
+    tw = wet_bulb_temperature(ta, humidity_pct)
+    value = (
+        -0.2442
+        + 0.55399 * tw
+        + 0.45535 * ta
+        - 0.0022 * (tw ** 2)
+        + 0.00278 * tw * ta
+        + 3.0
+    )
+    return round(value, 1)
 
 
-def apparent_temp(ta: float, rh: float) -> float:
-    """기상청 여름철 체감온도(℃)."""
-    tw = wet_bulb(ta, rh)
-    return (-0.2442 + 0.55399 * tw + 0.45535 * ta
-            - 0.0022 * tw ** 2 + 0.00278 * tw * ta + 3.0)
+def heat_level_for(apparent_temp_c: float) -> str:
+    if apparent_temp_c < 31:
+        return "NORMAL"
+    if apparent_temp_c < 33:
+        return "HEAT_CAUTION"
+    if apparent_temp_c < 35:
+        return "REST_REQUIRED"
+    if apparent_temp_c < 38:
+        return "STOP_RECOMMENDED"
+    return "EMERGENCY_STOP"
 
 
-def heat_stage(apparent_c: float) -> tuple[str, str]:
-    """체감온도 → (단계, 권고문구). 2026 고용노동부 대응지침 기준."""
-    for threshold, stage, advice in config.HEAT_STAGES:
-        if threshold is None or apparent_c >= threshold:
-            return stage, advice
-    return "NORMAL", "정상 모니터링"
+def heat_guidance(level: str) -> dict:
+    """Return dashboard wording and worker-device output for a heat stage."""
+    return {
+        "NORMAL": {
+            "message": "정상 모니터링",
+            "legal_basis": "normal",
+            "led": "green",
+            "sound": "none",
+        },
+        "HEAT_CAUTION": {
+            "message": "폭염작업 후보: 냉방·통풍·시간조정·휴식을 검토하세요.",
+            "legal_basis": "preventive",
+            "led": "yellow_blink",
+            "sound": "short_once",
+        },
+        "REST_REQUIRED": {
+            "message": "폭염작업 시 2시간 이내 20분 이상 휴식 기준을 적용하세요.",
+            "legal_basis": "legal_standard",
+            "led": "orange_blink",
+            "sound": "triple_with_vibration",
+        },
+        "STOP_RECOMMENDED": {
+            "message": "행정지침상 14~17시 옥외작업 중지를 권고합니다.",
+            "legal_basis": "administrative_recommendation",
+            "led": "red_blink",
+            "sound": "strong_repeat_with_vibration",
+        },
+        "EMERGENCY_STOP": {
+            "message": "행정지침상 긴급조치 외 옥외작업 중지를 권고합니다.",
+            "legal_basis": "administrative_recommendation",
+            "led": "red_fast_blink",
+            "sound": "long_repeat",
+        },
+    }[level]
 
 
-# ---------- 사건(Incident) 개선 권고 (규칙 기반) ----------
-def recommend(duration_sec: float, min_distance_m: float, repeat_count: int) -> str:
-    parts = []
-    if min_distance_m is not None and min_distance_m <= config.INCIDENT_VERY_CLOSE_M:
-        parts.append(f"최소 접근거리 {min_distance_m:.2f}m 초근접 — 즉시 작업중지 기준 및 안전교육 점검")
-    if duration_sec >= config.INCIDENT_LONG_EXPOSURE_SEC:
-        parts.append(f"위험 노출 {duration_sec:.0f}초 지속 — 작업 동선 분리 및 유도자 배치 검토")
-    if repeat_count >= 2:
-        parts.append(f"동일 장비-근로자 쌍 {repeat_count}회 반복 접근 — 해당 구역 출입통제 필요")
-    if not parts:
-        parts.append("단발성 접근 — 해당 시간대 작업계획 확인 권고")
-    return " / ".join(parts)
+def proximity_alert(level: str, distance_m: float | None = None) -> dict:
+    distance_text = "--" if distance_m is None else f"{distance_m:.1f}m"
+    return {
+        "SAFE": {
+            "led": "green",
+            "buzzer": "none",
+            "vibration": False,
+            "display": "SAFE",
+        },
+        "CAUTION": {
+            "led": "yellow",
+            "buzzer": "slow",
+            "vibration": False,
+            "display": f"CAUTION {distance_text}",
+        },
+        "DANGER": {
+            "led": "red",
+            "buzzer": "fast",
+            "vibration": True,
+            "display": f"DANGER {distance_text}",
+        },
+        "OFFLINE": {
+            "led": "offline_pattern",
+            "buzzer": "offline_pattern",
+            "vibration": False,
+            "display": "OFFLINE",
+        },
+    }[level]

@@ -1,95 +1,40 @@
-# SafeON — 스마트 안전관제 시스템 데모(관제 서버 + 대시보드)
+# SafeON — 중장비·근로자 스마트 안전관제
 
-중장비-근로자 충돌 위험을 실시간 감지·경보·기록하는 해커톤 프로젝트의 SW 파트입니다.
-**구현 세부 명세서 기준**으로 MQTT 통신, 3단계 위험판정(엣지 즉시판정), 아차사고 보고서(Incident),
-장치상태 관제, 기상청 체감온도 기반 폭염 대응을 구현합니다.
+SafeON은 중장비와 근로자의 접근 거리, 중장비 온습도, 후방 카메라
+분석 결과를 MQTT로 수집해 실시간 경보·사건 관리·보고서·후속조치를
+제공하는 해커톤용 관제 시스템입니다.
 
-## 위험 단계 (명세서)
+이 버전은 `SafeOn 구현 세부 명세서`의 데이터 계약과 판정 기준을
+기준으로 구현되어 있습니다.
 
-| 단계 | 거리 | 시스템 동작 |
-|---|---|---|
-| SAFE | 3m 초과 | 정상 표시, 경보·기록 없음 |
-| CAUTION | 1m 초과~3m 이하 | 황색 경보, 관제 기록 시작 |
-| DANGER | 1m 이하 | 적색 경보, **아차사고 보고서 자동 생성** (near_miss=true) |
-| OFFLINE | — | 미수신 지속 시 관제센터 자체 판정 |
+## 핵심 동작
 
-근거: WorkSafe Victoria 3m 배제구역 권고 / 고용노동부·안전보건공단 2025 스마트 안전장치 최소 감지성능 1m.
+```text
+[근로자 거리장치] ─┐
+[중장비 환경센서] ─┼─ MQTT safeon/# ─> [FastAPI 관제 서버] ─> SQLite
+[후방 카메라]    ─┘                              │
+                                        WebSocket 실시간 전송
+                                                  │
+                                          [관제 대시보드]
 
-## 아키텍처
-
-```
-[근로자 태그 W01]────┐                      ┌ 사건(EVT) 관리·장치상태·체감온도
- UWB·자이로(낙상)     ├ MQTT ─> [브로커] ──> [FastAPI 관제 서버] ─ SQLite
-[중장비 장치 E01]────┘ (1초)     :1883          │
- 상태·온습도(30분)·후방카메라                   └ WebSocket ──> [대시보드]
-[simulator.py 목업] ── 동일 토픽·JSON ──┘
-                    ── (백업) MQTT safeon/batch 또는 HTTP POST /api/batch
+통신 장애 시 HTTP /api/ingest/* 또는 /api/batch 사용
 ```
 
-| 파일 | 역할 |
-|---|---|
-| `main.py` | FastAPI 서버 (WebSocket, 사건 조치, 장치 watchdog, 리포트) |
-| `mqtt_ingest.py` | MQTT 수신·사건 흐름·장치 레지스트리·체감온도 처리 |
-| `risk_engine.py` | 3단계 판정, 필터, 기상청 체감온도, 규칙 기반 개선 권고 |
-| `db.py` | SQLite (events / incidents / env_logs, 일일·주간 통계) |
-| `config.py` | 임계값·MQTT 설정 — **대회장 실측 후 이 파일만 튜닝** |
-| `mosquitto.conf` | mosquitto 브로커 설정 (1순위 권장) |
-| `broker.py` | 내장 MQTT 브로커 (mosquitto 설치 불가 시 백업) |
-| `static/dashboard.html` | 관제 대시보드 |
-| `simulator.py` | ESP32 목업 (명세서 JSON 그대로 발행) |
-| `test_risk_engine.py` | 단위 테스트 8종 |
+- 거리 단계: `SAFE`(3m 초과), `CAUTION`(1m 초과~3m 이하),
+  `DANGER`(1m 이하), `OFFLINE`
+- `DANGER` 진입 시 `EVT-YYYYMMDD-0001` 형식의 사건 생성
+- 사건별 시작/종료시각, 최소거리, 위험 노출시간, 온라인율 계산
+- 조치상태 `OPEN → ACK → CLOSED` 및 개선조치 추적
+- 거리장치 2초 미수신 `DEGRADED`, 5초 미수신 `OFFLINE`
+- 온습도장치 예정 전송시각 2회 연속 누락 시 `OFFLINE`
+- 명세서의 여름철 체감온도 공식과 5단계 대응기준 적용
+- 후방 카메라의 사람 감지 여부·신뢰도·상태 수신
 
-## 실행 (데모)
+## 센서 데이터 계약
 
-```bash
-pip install -r requirements.txt
+### 근접위험
 
-# 터미널 1: MQTT 브로커 — mosquitto 권장 (1순위)
-mosquitto -c mosquitto.conf -v
-# mosquitto가 없으면 (백업): python broker.py
-
-# 터미널 2: 관제 서버
-uvicorn main:app --host 0.0.0.0 --port 8000
-
-# 터미널 3: ESP32 목업 시뮬레이터
-python simulator.py --env-interval 20 --heat 34 --camera --fall-at 12
-#   --heat 34      : 폭염 상황 (체감온도 REST_REQUIRED 이상 경보)
-#   --camera       : 후진 시 후방카메라 사람감지 발행
-#   --fall-at 12   : 12초 시점 낙상 이벤트
-python simulator.py --noise            # 현장 무선환경(노이즈·유실·지연) 리허설
-python simulator.py --offline-at 15    # 통신두절 재현 → OFFLINE 자체판정 확인
-python simulator.py --batch-demo       # 통신두절→로컬저장→일괄업로드 백업 플랜 시연
-```
-
-대시보드: http://localhost:8000/
-
-### mosquitto 설치·설정 가이드
-
-- **Windows**: https://mosquitto.org/download/ 에서 설치 → `mosquitto.exe`를 이 프로젝트의 `mosquitto.conf`로 실행. 방화벽 허용 창에서 **개인/공용 모두 허용** (안 하면 ESP32 접속 불가).
-- **macOS**: `brew install mosquitto` / **Linux**: `apt install mosquitto`
-- **핵심**: mosquitto 2.x는 기본 localhost 전용 → 반드시 `-c mosquitto.conf`로 실행 (`listener 1883` + `allow_anonymous true`).
-- `-v` 모드는 수신 토픽을 콘솔에 출력 — ESP32 발행 확인용 당일 디버깅 1차 도구.
-- 접속 테스트: `mosquitto_sub -h <노트북IP> -t "safeon/#" -v`
-
-## ESP32 전환
-
-1. 관제 노트북에서 `mosquitto -c mosquitto.conf -v` + 서버 실행, 노트북 IP 확인
-2. ESP32 펌웨어에서 브로커 주소를 노트북 IP로 설정
-3. 아래 토픽/JSON 규약대로 발행 — **시뮬레이터와 완전히 동일하므로 서버·대시보드 수정 불필요**
-4. 거리 임계값 튜닝은 `config.py`만 수정
-
-## MQTT 토픽·JSON 규약
-
-| 토픽 | 주기 | 내용 |
-|---|---|---|
-| `safeon/worker/{worker_id}/status` | 1초 | A. 근접위험 데이터 |
-| `safeon/worker/{worker_id}/event` | 발생 시 | 낙상 등 `{"type":"fall","detail":...}` |
-| `safeon/equip/{equipment_id}/status` | 1초 | A. 근접위험 데이터 (중장비측) |
-| `safeon/equip/{equipment_id}/env` | **30분** | B. 온습도 데이터 |
-| `safeon/equip/{equipment_id}/camera` | 분석 시 | C. 후방 카메라 데이터 |
-| `safeon/batch` | 필요 시 | 오프라인 저장분 배열 (백업) |
-
-### A. 근접위험 데이터
+토픽: `safeon/proximity/{worker_id}`
 
 ```json
 {
@@ -103,10 +48,13 @@ python simulator.py --batch-demo       # 통신두절→로컬저장→일괄업
 }
 ```
 
-- `risk_level`은 **엣지(ESP32) 즉시 판정값** (SAFE/CAUTION/DANGER). 판정 즉시 로컬 경보(LED·부저·진동·OLED) → 서버 왕복 지연 없음. 없으면 서버가 재계산(백업).
-- `near_miss`: DANGER이면 true (명세서 권고 기준)
+관제 서버는 센서의 `risk_level`을 검증하고 `distance_m` 기준으로 최종
+단계를 계산합니다. `sequence`가 이전 값과 같거나 작으면 중복
+메시지로 제외합니다.
 
-### B. 온습도 데이터 (30분 주기)
+### 온습도
+
+토픽: `safeon/environment/{equipment_id}` (운영 주기 30분)
 
 ```json
 {
@@ -118,17 +66,9 @@ python simulator.py --batch-demo       # 통신두절→로컬저장→일괄업
 }
 ```
 
-수신 시 서버가 **기상청 여름철 체감온도**(Stull 습구온도 기반)를 계산해 폭염 단계 판정:
+### 후방 카메라
 
-| 단계 | 체감온도 | 처리 (2026 고용노동부 대응지침) |
-|---|---|---|
-| NORMAL | 31℃ 미만 | 정상 모니터링 |
-| HEAT_CAUTION | 31~33℃ | 냉방·통풍·시간조정·휴식 검토 |
-| REST_REQUIRED | 33~35℃ | 2시간 이내 20분 이상 휴식 (법적 기준) |
-| STOP_RECOMMENDED | 35~38℃ | 14~17시 옥외작업 중지 권고 |
-| EMERGENCY_STOP | 38℃ 이상 | 긴급조치 외 옥외작업 중지 권고 |
-
-### C. 후방 카메라 데이터
+토픽: `safeon/camera/{equipment_id}`
 
 ```json
 {
@@ -140,40 +80,97 @@ python simulator.py --batch-demo       # 통신두절→로컬저장→일괄업
 }
 ```
 
-(영상 연산은 별도 노트북에서 수행 → 결과만 이 형식으로 발행)
+### 배치 백업
 
-## 관제센터 자체 계산 (명세서 '안전관제팀 구현' 항목)
+`safeon/batch` 또는 `POST /api/batch`로 위 레코드에
+`kind: proximity | environment | camera`를 추가한 배열을 전송합니다.
 
-- **아차사고 보고서(Incident)**: DANGER 진입 시 자동 생성 — 사건 ID(`EVT-YYYYMMDD-0001`), 시작/종료시각, 최소 접근거리, 위험 노출지속시간, 조치상태(OPEN→ACK→CLOSED, 대시보드에서 변경), 규칙 기반 개선 권고(반복 접근·장시간 노출·초근접).
-- **장치상태**: 장치 ID/유형(WORKER·EQUIPMENT·CAMERA)/배터리/마지막 수신. 별도 OFFLINE 메시지 없이도 자체 판정 — 거리장치 2초 미수신 → DEGRADED, 5초 → OFFLINE / 온습도 2회 연속 누락 → OFFLINE.
+## 실행
 
-## 백업 플랜 (통신 두절 시)
+Python 3.11 이상을 권장합니다.
 
-ESP32는 로컬 저장 후 복구 시 일괄 업로드 (MQTT `safeon/batch` 또는 HTTP `POST /api/batch`, 형식 동일):
+```bash
+python -m venv .venv
 
-```jsonc
-[
-  {"kind":"status","timestamp":"2026-07-24T10:31:05+09:00","equipment_id":"E01",
-   "worker_id":"W01","distance_m":0.95,"risk_level":"DANGER","near_miss":true,"sequence":88},
-  {"kind":"env","timestamp":"2026-07-24T10:30:00+09:00","equipment_id":"E01",
-   "temperature_c":34.5,"humidity_pct":70.0,"sensor_status":"NORMAL"},
-  {"kind":"event","timestamp":"2026-07-24T10:32:11+09:00","worker_id":"W01","type":"fall"}
-]
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-## 조회 API
+터미널 1 — MQTT 브로커:
 
-| 엔드포인트 | 용도 |
+```bash
+mosquitto -c mosquitto.conf -v
+
+# Mosquitto가 없을 때 개발용 내장 브로커
+python broker.py
+```
+
+터미널 2 — 관제 서버:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+터미널 3 — 센서 시뮬레이터:
+
+```bash
+python simulator.py --once --env-interval 10
+python simulator.py --once --heat
+python simulator.py --batch-demo
+
+# MQTT 없이 HTTP 백업경로로 시연
+python simulator.py --http --once
+```
+
+대시보드: <http://localhost:8000/>
+
+API 문서: <http://localhost:8000/docs>
+
+## 주요 API
+
+| API | 기능 |
 |---|---|
-| `WS /ws/live` | 실시간 push (근접·사건·환경·카메라·장치상태) |
-| `GET /api/incidents` / `PATCH /api/incidents/{uid}?status=ACK` | 아차사고 보고서 / 조치상태 변경 |
-| `GET /api/devices` | 장치상태 (ONLINE/DEGRADED/OFFLINE) |
-| `GET /api/events` / `GET /api/env` / `GET /api/camera` | 이벤트 로그 / 온습도 / 카메라 |
-| `GET /api/report/daily` / `GET /api/report/weekly` | 일일/주간 리포트 (자동 요약) |
-| `GET /api/health` | 수신 통계 |
+| `POST /api/ingest/proximity` | 근접위험 HTTP 백업 수신 |
+| `POST /api/ingest/environment` | 온습도 HTTP 백업 수신 |
+| `POST /api/ingest/camera` | 후방 카메라 HTTP 백업 수신 |
+| `POST /api/batch` | 오프라인 저장분 일괄 수신 |
+| `GET /api/live` | 최신 센서 상태 |
+| `GET /api/incidents` | 위험사건 조회 |
+| `PATCH /api/incidents/{event_id}/action` | OPEN/ACK/CLOSED 변경 |
+| `GET /api/devices` | 장치상태·온라인율 조회 |
+| `GET /api/report/daily` | 일일 안전운영 보고서 |
+| `GET /api/report/weekly` | 최근 7일 보고서 |
+| `GET/POST /api/actions` | 개선조치 조회·등록 |
+| `WS /ws/live` | 대시보드 실시간 이벤트 |
 
 ## 테스트
 
 ```bash
-python test_risk_engine.py   # 판정·필터·체감온도·권고 8종
+python test_risk_engine.py
 ```
+
+거리 경계값, 체감온도 단계, 근로자 장치 출력, 사건 생명주기, 장치
+오프라인 판정, 조치상태 연동을 검증합니다.
+
+## 구성
+
+| 파일 | 역할 |
+|---|---|
+| `models.py` | 명세서 기반 Pydantic 센서 모델 |
+| `risk_engine.py` | 거리·체감온도·경보 계산 |
+| `mqtt_ingest.py` | MQTT/HTTP 공통 수신 및 중복 제거 |
+| `db.py` | 사건·환경·카메라·장치·개선조치 저장 |
+| `main.py` | FastAPI, WebSocket, 보고서 API |
+| `static/dashboard.html` | 실시간 관제·보고서·개선조치 SPA |
+| `simulator.py` | 명세서 형식 센서 시뮬레이터 |
+
+## 배포 전 보안 주의
+
+동봉된 `mosquitto.conf`는 행사장 LAN 시연을 위해 익명 접속을
+허용합니다. 실제 현장에서는 MQTT 계정·ACL·TLS와 API 인증, 방화벽,
+데이터 보존·백업 정책을 반드시 추가해야 합니다.

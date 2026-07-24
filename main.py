@@ -1,199 +1,332 @@
-"""SafeON 관제 서버 — FastAPI + MQTT (구현 세부 명세서 기준)
+"""SafeON control server: MQTT ingestion, REST API and live dashboard."""
 
-실행:
-    1) 브로커: mosquitto -c mosquitto.conf -v   (없으면: python broker.py)
-    2) 서버:   uvicorn main:app --host 0.0.0.0 --port 8000
-    3) 대시보드: http://localhost:8000/
-"""
+from __future__ import annotations
+
 import asyncio
+import csv
+import io
 import json
-import time
+from contextlib import asynccontextmanager
+from datetime import date
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, StreamingResponse
 
 import config
 import db
+import risk_engine
+from models import (
+    CameraReading,
+    EnvironmentReading,
+    ImprovementActionCreate,
+    ImprovementActionUpdate,
+    IncidentActionUpdate,
+    ProximityReading,
+)
 from mqtt_ingest import Ingest
 
-app = FastAPI(title="SafeON 관제 서버")
 
 conn = db.get_conn()
 ws_clients: set[WebSocket] = set()
-loop_ref: dict = {}
+loop_ref: dict[str, asyncio.AbstractEventLoop] = {}
 
 
 def broadcast_sync(payload: dict):
-    """MQTT 스레드(동기) → WebSocket(비동기) 전달."""
     loop = loop_ref.get("loop")
     if loop is None:
         return
-    msg = json.dumps(payload, ensure_ascii=False)
+    message = json.dumps(payload, ensure_ascii=False, default=str)
 
-    async def _send():
+    async def send():
         dead = []
-        for ws in ws_clients:
+        for client in tuple(ws_clients):
             try:
-                await ws.send_text(msg)
+                await client.send_text(message)
             except Exception:
-                dead.append(ws)
-        for ws in dead:
-            ws_clients.discard(ws)
+                dead.append(client)
+        for client in dead:
+            ws_clients.discard(client)
 
-    asyncio.run_coroutine_threadsafe(_send(), loop)
+    asyncio.run_coroutine_threadsafe(send(), loop)
 
 
 ingest = Ingest(conn, on_update=broadcast_sync)
 
 
-async def device_watchdog():
-    """명세서: 미수신 시간 기반 DEGRADED/OFFLINE 자체 판정 (1초 주기)."""
+async def monitor_devices():
     while True:
-        await asyncio.sleep(1.0)
-        if ingest.refresh_device_status():
-            broadcast_sync({"type": "devices", "devices": ingest.device_list(),
-                            "ts": time.time()})
+        await asyncio.sleep(1)
+        for item in db.evaluate_device_health(conn):
+            broadcast_sync({"type": "device", **item})
+        for item in db.close_stale_incidents(conn):
+            broadcast_sync({"type": "incident", **item})
 
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     loop_ref["loop"] = asyncio.get_running_loop()
-    asyncio.create_task(device_watchdog())
+    mqtt_error = None
     try:
         ingest.start()
-        print(f"[SafeON] MQTT 연결: {config.MQTT_HOST}:{config.MQTT_PORT} → {config.MQTT_BASE}/#")
-    except Exception as e:
-        print(f"[SafeON] !! MQTT 브로커 연결 실패: {e}")
-        print("[SafeON]    브로커 없이 기동. HTTP /api/batch 백업 경로는 사용 가능.")
+    except Exception as exc:
+        mqtt_error = str(exc)
+        print(f"[SafeON] MQTT 연결 실패, HTTP 백업으로 기동: {exc}")
+    app.state.mqtt_error = mqtt_error
+    monitor_task = asyncio.create_task(monitor_devices())
+    try:
+        yield
+    finally:
+        monitor_task.cancel()
+        ingest.stop()
 
 
-# ---------- 백업: 오프라인 저장분 일괄 업로드 ----------
+app = FastAPI(
+    title="SafeON 안전관제 API",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+
+
+@app.post("/api/ingest/proximity")
+def ingest_proximity(reading: ProximityReading):
+    return ingest.handle_proximity(reading.model_dump(mode="json"), transport="http")
+
+
+@app.post("/api/ingest/environment")
+def ingest_environment(reading: EnvironmentReading):
+    return ingest.handle_environment(
+        reading.model_dump(mode="json"), transport="http"
+    )
+
+
+@app.post("/api/ingest/camera")
+def ingest_camera(reading: CameraReading):
+    return ingest.handle_camera(reading.model_dump(mode="json"), transport="http")
+
+
 @app.post("/api/batch")
-async def batch(records: list[dict]):
-    return {"stored": ingest.handle_batch(records)}
+def ingest_batch(records: list[dict]):
+    return ingest.handle_batch(records, transport="http")
 
 
-# ---------- 조회 ----------
-@app.get("/api/events")
-def events(date_str: str | None = None, risk_level: str | None = None,
-           equipment_id: str | None = None, event_type: str | None = None,
-           limit: int = 200):
-    return db.query_events(conn, date_str, risk_level, equipment_id, event_type, limit)
+@app.get("/api/live")
+def live():
+    devices = db.list_devices(conn)
+    status_by_device = {
+        (item["device_id"], item["device_type"]): item["status"]
+        for item in devices
+    }
+    proximity = []
+    for source in ingest.proximity_latest.values():
+        item = dict(source)
+        worker_status = status_by_device.get((item["worker_id"], "WORKER"))
+        if worker_status == "OFFLINE":
+            item.update(
+                {
+                    "risk_level": "OFFLINE",
+                    "risk_label": config.RISK_LABELS["OFFLINE"],
+                    "near_miss": False,
+                    "alert": risk_engine.proximity_alert("OFFLINE"),
+                    "risk_mismatch": True,
+                }
+            )
+        proximity.append(item)
+
+    cameras = []
+    for source in (
+        list(ingest.camera_latest.values()) or db.latest_cameras(conn)
+    ):
+        item = dict(source)
+        camera_id = f"CAM-{item['equipment_id']}"
+        if status_by_device.get((camera_id, "CAMERA")) == "OFFLINE":
+            item["camera_status"] = "OFFLINE"
+        cameras.append(item)
+
+    return {
+        "proximity": proximity,
+        "environment": (
+            list(ingest.environment_latest.values())
+            or db.latest_environment(conn)
+        ),
+        "cameras": cameras,
+    }
 
 
 @app.get("/api/incidents")
-def incidents(date_str: str | None = None, status: str | None = None, limit: int = 100):
-    return db.query_incidents(conn, date_str, status, limit)
+def incidents(
+    date_str: str | None = None,
+    action_status: str | None = None,
+    equipment_id: str | None = None,
+    worker_id: str | None = None,
+    active_only: bool = False,
+    limit: int = Query(default=200, ge=1, le=1000),
+):
+    return db.list_incidents(
+        conn,
+        date_str=date_str,
+        action_status=action_status,
+        equipment_id=equipment_id,
+        worker_id=worker_id,
+        active_only=active_only,
+        limit=limit,
+    )
 
 
-@app.patch("/api/incidents/{event_uid}")
-def incident_action(event_uid: str, status: str):
-    """조치상태 변경: OPEN → ACK → CLOSED"""
-    if not db.set_incident_status(conn, event_uid, status.upper()):
-        raise HTTPException(400, "status는 OPEN/ACK/CLOSED 중 하나")
-    broadcast_sync({"type": "incident", "action": "status",
-                    "event_uid": event_uid, "status": status.upper(),
-                    "ts": time.time()})
-    return {"event_uid": event_uid, "action_status": status.upper()}
+@app.patch("/api/incidents/{event_id}/action")
+def incident_action(event_id: str, update: IncidentActionUpdate):
+    item = db.update_incident_action(conn, event_id, update.action_status)
+    if item is None:
+        raise HTTPException(status_code=404, detail="사건을 찾을 수 없습니다.")
+    broadcast_sync({"type": "incident_action", **item})
+    return item
 
 
 @app.get("/api/devices")
 def devices():
-    """장치상태: ONLINE/DEGRADED/OFFLINE, 마지막 통신, 배터리 등."""
-    return ingest.device_list()
-
-
-@app.get("/api/env")
-def env():
-    latest = list(ingest.env_latest.values())
-    return latest if latest else db.latest_env(conn)
-
-
-@app.get("/api/camera")
-def camera():
-    return list(ingest.camera_latest.values())
-
-
-@app.get("/api/stats/daily")
-def stats_daily(date_str: str | None = None):
-    return db.daily_stats(conn, date_str)
-
-
-@app.get("/api/report/daily")
-def report_daily(date_str: str | None = None):
-    s = db.daily_stats(conn, date_str)
-    return {**s, "summary": _summary(s, s["date"])}
-
-
-@app.get("/api/report/weekly")
-def report_weekly(end_date: str | None = None):
-    s = db.weekly_stats(conn, end_date)
-    return {**s, "summary": _summary(s, f"{s['start']} ~ {s['end']} 주간")}
-
-
-def _summary(s: dict, label: str) -> str:
-    caution = s["by_level"].get(config.RISK_CAUTION, 0)
-    danger = s["by_level"].get(config.RISK_DANGER, 0)
-    falls = s["by_type"].get("fall", 0)
-    envs = s["by_type"].get("env", 0)
-    cams = s["by_type"].get("camera", 0)
-    inc = s["incidents"]
-    worst_equip = s["by_equip"][0]["equipment_id"] if s["by_equip"] else None
-    worst_hour = max(s["by_hour"], key=s["by_hour"].get) if s["by_hour"] else None
-
-    parts = [f"{label} 총 이벤트 {s['total']}건 (주의 진입 {caution}·위험 진입 {danger}건"]
-    parts.append(f", 낙상 {falls}건" if falls else "")
-    parts.append(f", 폭염경보 {envs}건" if envs else "")
-    parts.append(f", 카메라 감지 {cams}건" if cams else "")
-    parts.append("). ")
-    if inc["count"]:
-        parts.append(f"아차사고 보고서 {inc['count']}건 생성(미조치 {inc['open']}건)")
-        if inc["min_distance_m"] is not None:
-            parts.append(f", 최소 접근거리 {inc['min_distance_m']}m")
-        if inc["avg_duration_sec"] is not None:
-            parts.append(f", 평균 위험 노출 {inc['avg_duration_sec']}초")
-        parts.append(". ")
-    if worst_equip:
-        parts.append(f"최다 발생 장비는 {worst_equip}")
-        parts.append(f", 집중 시간대는 {worst_hour}시입니다. " if worst_hour else "입니다. ")
-    if falls:
-        parts.append("낙상 발생 — 해당 근로자 안전 확인 및 작업환경 점검 필요. ")
-    if danger:
-        parts.append("위험(DANGER) 진입 발생 — 작업 동선 분리를 권장합니다.")
-    elif s["total"] == 0:
-        parts.append("기록된 위험 이벤트가 없습니다.")
-    return "".join(parts)
+    return db.list_devices(conn)
 
 
 @app.get("/api/status")
-def status():
-    """(장비, 근로자) 쌍별 현재 단계 — 미수신 시 OFFLINE 표시 (명세서)."""
-    now = time.time()
-    out = []
-    for (equipment_id, worker_id), t in ingest.trackers.items():
-        gap = now - t.last_seen
-        level = config.RISK_OFFLINE if gap >= config.OFFLINE_SEC else t.level
-        out.append({
-            "equipment_id": equipment_id, "worker_id": worker_id,
-            "risk_level": level, "risk_label": config.RISK_LABELS[level],
-            "dwell_sec": round(t.dwell_seconds(now), 1),
-        })
-    return out
+def legacy_status():
+    return db.list_devices(conn)
+
+
+@app.get("/api/environment")
+@app.get("/api/env")
+def environment():
+    return list(ingest.environment_latest.values()) or db.latest_environment(conn)
+
+
+@app.get("/api/cameras")
+def cameras():
+    return list(ingest.camera_latest.values()) or db.latest_cameras(conn)
+
+
+def _report_summary(result: dict) -> str:
+    count = result["total_incidents"]
+    if count == 0:
+        return (
+            f"{result['start']}~{result['end']} 기간 중 기록된 위험 사건이 없습니다. "
+            f"장치 온라인율은 {result['device_online_rate']:.1f}%입니다."
+        )
+    minimum = result["minimum_distance_m"]
+    exposure = result["total_exposure_seconds"]
+    summary = (
+        f"위험 사건 {count}건, 총 노출 {exposure:.1f}초가 기록됐습니다. "
+        f"최소 접근거리는 {minimum:.2f}m이며 장치 온라인율은 "
+        f"{result['device_online_rate']:.1f}%입니다."
+    )
+    if result["active_incidents"]:
+        summary += f" 현재 진행 중인 사건이 {result['active_incidents']}건 있습니다."
+    if result["action_close_rate"] < 100:
+        summary += (
+            f" 조치 완료율은 {result['action_close_rate']:.1f}%로 미완료 사건을 "
+            "확인해야 합니다."
+        )
+    return summary
+
+
+@app.get("/api/report/daily")
+def daily_report(date_str: str | None = None):
+    result = db.daily_report(conn, date_str)
+    result["summary"] = _report_summary(result)
+    return result
+
+
+@app.get("/api/report/weekly")
+def weekly_report(end_date: str | None = None):
+    result = db.weekly_report(conn, end_date)
+    result["summary"] = _report_summary(result)
+    return result
+
+
+@app.get("/api/report/incidents.csv")
+def incident_csv(
+    start_date: str | None = None,
+    end_date: str | None = None,
+):
+    end = end_date or date.today().isoformat()
+    start = start_date or end
+    rows = db.report(conn, start, end)["incidents"]
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        [
+            "event_id",
+            "start_ts",
+            "end_ts",
+            "worker_id",
+            "equipment_id",
+            "min_distance_m",
+            "exposure_seconds",
+            "online_rate",
+            "action_status",
+            "recommendation",
+        ]
+    )
+    for row in rows:
+        writer.writerow(
+            [
+                row.get("event_id"),
+                row.get("start_ts"),
+                row.get("end_ts"),
+                row.get("worker_id"),
+                row.get("equipment_id"),
+                row.get("min_distance_m"),
+                row.get("exposure_seconds"),
+                row.get("online_rate"),
+                row.get("action_status"),
+                row.get("recommendation"),
+            ]
+        )
+    content = "\ufeff" + buffer.getvalue()
+    return StreamingResponse(
+        iter([content.encode("utf-8")]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=safeon-incidents.csv"},
+    )
+
+
+@app.get("/api/actions")
+def actions(status: str | None = None, limit: int = Query(200, ge=1, le=1000)):
+    return db.list_improvement_actions(conn, status, limit)
+
+
+@app.post("/api/actions")
+def create_action(payload: ImprovementActionCreate):
+    item = db.create_improvement_action(conn, payload.model_dump())
+    broadcast_sync({"type": "improvement_action", **item})
+    return item
+
+
+@app.patch("/api/actions/{action_id}")
+def update_action(action_id: str, payload: ImprovementActionUpdate):
+    item = db.update_improvement_action(
+        conn, action_id, payload.model_dump(exclude_none=True)
+    )
+    if item is None:
+        raise HTTPException(status_code=404, detail="개선조치를 찾을 수 없습니다.")
+    broadcast_sync({"type": "improvement_action", **item})
+    return item
 
 
 @app.get("/api/health")
 def health():
-    return {"mqtt": ingest.stats, "ws_clients": len(ws_clients),
-            "devices": len(ingest.devices)}
+    return {
+        "status": "ok",
+        "mqtt": ingest.stats,
+        "mqtt_error": getattr(app.state, "mqtt_error", None),
+        "websocket_clients": len(ws_clients),
+    }
 
 
 @app.websocket("/ws/live")
-async def ws_live(ws: WebSocket):
+async def websocket_live(ws: WebSocket):
     await ws.accept()
     ws_clients.add(ws)
     try:
         while True:
-            await ws.receive_text()  # keepalive
+            await ws.receive_text()
     except WebSocketDisconnect:
         ws_clients.discard(ws)
 
